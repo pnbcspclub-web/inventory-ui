@@ -1,0 +1,467 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f8f9fa;
+  --foreground: #343a40;
+  --muted: #6c757d;
+  --surface: #ffffff;
+  --surface-muted: #f1f3f5;
+  --brand: #007bff;
+  --brand-strong: #0069d9;
+  --brand-soft: rgba(0, 123, 255, 0.14);
+  --accent: #28a745;
+  --border: rgba(52, 58, 64, 0.12);
+  --shadow: 0 18px 40px rgba(33, 37, 41, 0.12);
+  --card-shadow: 0 20px 40px rgba(33, 37, 41, 0.08);
+  --radius: 10px;
+  --ring: rgba(0, 123, 255, 0.2);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-surface: var(--surface);
+  --color-brand: var(--brand);
+  --font-sans: var(--font-manrope);
+  --font-mono: var(--font-plex-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --background: #212529;
+    --foreground: #f8f9fa;
+    --muted: #adb5bd;
+    --surface: #2b3035;
+    --surface-muted: #343a40;
+    --brand: #007bff;
+    --brand-strong: #0069d9;
+    --brand-soft: rgba(0, 123, 255, 0.2);
+    --accent: #28a745;
+    --border: rgba(248, 249, 250, 0.12);
+    --shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+    --card-shadow: 0 20px 38px rgba(0, 0, 0, 0.4);
+    --ring: rgba(0, 123, 255, 0.35);
+  }
+
+  :root:not([data-theme]) .app-background {
+    background-image: radial-gradient(
+        circle at top left,
+        rgba(0, 123, 255, 0.12),
+        transparent 46%
+      ),
+      radial-gradient(
+        circle at 30% 80%,
+        rgba(40, 167, 69, 0.1),
+        transparent 42%
+      ),
+      linear-gradient(120deg, rgba(248, 249, 250, 0.05), transparent 45%);
+  }
+}
+
+:root[data-theme="dark"] {
+  --background: #1b1f24;
+  --foreground: #f1f3f5;
+  --muted: #adb5bd;
+  --surface: #242a31;
+  --surface-muted: #2f353d;
+  --brand: #007bff;
+  --brand-strong: #0069d9;
+  --brand-soft: rgba(0, 123, 255, 0.22);
+  --accent: #28a745;
+  --border: rgba(248, 249, 250, 0.16);
+  --shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
+  --card-shadow: 0 18px 36px rgba(0, 0, 0, 0.32);
+  --ring: rgba(0, 123, 255, 0.4);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+.ant-layout {
+  min-height: 100vh;
+}
+
+.ant-layout-header {
+  padding: 0;
+  height: auto;
+  line-height: normal;
+}
+
+.ant-layout-content {
+  min-height: 0;
+}
+
+.app-background {
+  background-image: radial-gradient(
+      circle at top left,
+      rgba(0, 123, 255, 0.2),
+      transparent 46%
+    ),
+    radial-gradient(
+      circle at 30% 80%,
+      rgba(40, 167, 69, 0.16),
+      transparent 42%
+    ),
+    linear-gradient(120deg, rgba(52, 58, 64, 0.06), transparent 45%);
+}
+
+:root[data-theme="dark"] .app-background {
+  background-image: radial-gradient(
+      circle at top left,
+      rgba(0, 123, 255, 0.12),
+      transparent 46%
+    ),
+    radial-gradient(
+      circle at 30% 80%,
+      rgba(40, 167, 69, 0.1),
+      transparent 42%
+    ),
+    linear-gradient(120deg, rgba(248, 249, 250, 0.05), transparent 45%);
+}
+
+.app-shell {
+  background: transparent;
+}
+
+.app-shell .ant-layout-sider,
+.app-sider {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  box-shadow: 12px 0 30px rgba(0, 0, 0, 0.08);
+}
+
+:root[data-theme="dark"] .app-shell .ant-layout-sider,
+:root[data-theme="dark"] .app-sider {
+  background: #1f242b;
+  border-right: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+  box-shadow: 12px 0 30px rgba(0, 0, 0, 0.24);
+}
+
+.app-topbar {
+  padding: 0 32px 10px;
+  background: transparent;
+  height: auto;
+  line-height: normal;
+}
+
+.app-topbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  padding: 16px 20px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.app-user-btn {
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-shell .ant-layout-content {
+  padding: 0 32px;
+}
+
+.app-header {
+  min-height: 86px;
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.app-content {
+  margin: 0 auto;
+  max-width: 1200px;
+  width: 100%;
+  padding-top: 8px;
+  padding-bottom: 64px;
+}
+
+.app-menu .ant-menu-item {
+  border-radius: 8px;
+  margin: 4px 4px;
+}
+
+.app-menu .ant-menu-item-selected {
+  background: var(--brand-soft);
+  color: var(--foreground);
+}
+
+.app-menu .ant-menu-item a {
+  color: inherit;
+}
+
+:root[data-theme="dark"] .app-menu .ant-menu-item {
+  color: var(--muted);
+}
+
+:root[data-theme="dark"] .app-menu .ant-menu-item-selected {
+  background: rgba(0, 123, 255, 0.18);
+  color: var(--foreground);
+}
+
+:root[data-theme="dark"] .app-menu .ant-menu-item:not(.ant-menu-item-selected):hover {
+  background: color-mix(in srgb, var(--surface-muted) 70%, transparent);
+  color: var(--foreground);
+}
+
+.ant-card {
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--card-shadow);
+}
+
+.ant-card-head {
+  border-bottom: 1px solid var(--border);
+}
+
+.ant-table {
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.ant-table-tbody > tr:hover > td {
+  background: color-mix(in srgb, var(--surface-muted) 70%, transparent) !important;
+}
+
+.ant-table-thead > tr > th {
+  background: var(--surface-muted) !important;
+  color: var(--foreground) !important;
+  font-weight: 600;
+}
+
+.ant-btn {
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.ant-btn-primary {
+  background: var(--brand);
+  border-color: var(--brand);
+  box-shadow: 0 12px 22px rgba(0, 123, 255, 0.25);
+}
+
+.ant-btn-primary:not(:disabled):hover {
+  background: var(--brand-strong);
+  border-color: var(--brand-strong);
+}
+
+.ant-input,
+.ant-input-affix-wrapper,
+.ant-input-number,
+.ant-select-selector,
+.ant-picker {
+  border-radius: 8px !important;
+  border-color: color-mix(in srgb, var(--border) 85%, transparent) !important;
+  background: var(--surface);
+}
+
+.ant-input:focus,
+.ant-input-affix-wrapper-focused,
+.ant-input-number:focus,
+.ant-select-focused .ant-select-selector,
+.ant-picker-focused {
+  border-color: var(--brand) !important;
+  box-shadow: 0 0 0 3px var(--ring) !important;
+}
+
+.ant-modal-content {
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.ant-tag {
+  border-radius: 6px;
+  padding: 2px 10px;
+}
+
+.hero-card {
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(20px);
+}
+
+.hero-stat {
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  background: var(--surface);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+}
+
+.btn-primary {
+  border-radius: 8px;
+  background: var(--brand);
+  color: #fff;
+  padding: 12px 24px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(0, 123, 255, 0.28);
+}
+
+.btn-secondary {
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  padding: 12px 24px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.btn-secondary:hover {
+  border-color: var(--foreground);
+  color: var(--foreground);
+}
+
+:root[data-theme="dark"] .btn-secondary {
+  border-color: color-mix(in srgb, var(--border) 85%, transparent);
+  color: var(--foreground);
+}
+
+:root[data-theme="dark"] .btn-secondary:hover {
+  border-color: var(--brand);
+  color: var(--foreground);
+}
+
+:root[data-theme="dark"] .ant-table {
+  background: var(--surface);
+}
+
+:root[data-theme="dark"] .ant-table-thead > tr > th {
+  background: var(--surface-muted);
+  color: var(--foreground);
+  border-bottom: 1px solid var(--border);
+}
+
+:root[data-theme="dark"] .ant-table-tbody > tr > td {
+  color: var(--foreground);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+}
+
+:root[data-theme="dark"] .ant-table-tbody > tr:hover > td {
+  background: color-mix(in srgb, var(--surface-muted) 70%, transparent);
+}
+
+:root[data-theme="dark"] .ant-btn-default {
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  border-color: color-mix(in srgb, var(--border) 85%, transparent);
+  color: var(--foreground);
+}
+
+:root[data-theme="dark"] .ant-btn-default:not(:disabled):hover {
+  border-color: var(--brand);
+  color: var(--foreground);
+}
+
+:root[data-theme="dark"] .ant-card-head-title,
+:root[data-theme="dark"] .ant-card-body,
+:root[data-theme="dark"] .ant-typography,
+:root[data-theme="dark"] .ant-typography h1,
+:root[data-theme="dark"] .ant-typography h2,
+:root[data-theme="dark"] .ant-typography h3,
+:root[data-theme="dark"] .ant-typography h4 {
+  color: var(--foreground);
+}
+
+:root[data-theme="dark"] .ant-modal-content,
+:root[data-theme="dark"] .ant-dropdown-menu,
+:root[data-theme="dark"] .ant-select-dropdown {
+  background: var(--surface);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+
+:root[data-theme="dark"] .ant-dropdown-menu-item,
+:root[data-theme="dark"] .ant-select-item {
+  color: var(--foreground);
+}
+
+:root[data-theme="dark"] .ant-dropdown-menu-item:hover,
+:root[data-theme="dark"] .ant-select-item-option-active {
+  background: color-mix(in srgb, var(--surface-muted) 70%, transparent);
+}
+
+:root[data-theme="dark"] .ant-tag {
+  color: var(--foreground);
+  background: var(--surface-muted);
+  border-color: color-mix(in srgb, var(--border) 85%, transparent);
+}
+
+:root[data-theme="dark"] .ant-tag-volcano {
+  color: #fff;
+  background: #8f1d1d;
+  border-color: #b42323;
+}
+
+:root[data-theme="dark"] .ant-tag-green {
+  color: #d1fae5;
+  background: #0f5132;
+  border-color: #198754;
+}
+
+:root[data-theme="dark"] .ant-tag-gold {
+  color: #fff3cd;
+  background: #664d03;
+  border-color: #ffc107;
+}
+
+:root[data-theme="dark"] .ant-tag-red {
+  color: #fee2e2;
+  background: #7f1d1d;
+  border-color: #dc3545;
+}
+
+@media (max-width: 1024px) {
+  .app-shell .ant-layout-content {
+    padding: 0 20px;
+  }
+
+  .app-topbar {
+    padding: 0 20px 8px;
+  }
+
+  .app-topbar-inner {
+    padding: 12px 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
