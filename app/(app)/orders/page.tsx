@@ -45,14 +45,13 @@ export default function OrdersPage() {
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 
-  const fetchData = async () => {
-    setLoading(true);
-    const ordersRes = await fetch("/api/orders");
-    if (ordersRes.ok) setOrders(sortByCreatedAt(await ordersRes.json()));
-    setLoading(false);
-  };
-
   useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      const ordersRes = await fetch("/api/orders");
+      if (ordersRes.ok) setOrders(sortByCreatedAt(await ordersRes.json()));
+      setLoading(false);
+    };
     fetchData();
   }, []);
 

@@ -22,7 +22,7 @@ export default async function AppLayout({
     redirect("/login");
   }
   const settings = await getAppSettings();
-  if (settings.maintenanceMode && session.user.role !== "ADMIN") {
+  if (settings.maintenanceMode) {
     redirect("/maintenance");
   }
 

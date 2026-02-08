@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { APP_DESCRIPTION, APP_NAME } from "@/lib/app-config";
+import type { AppSetting } from "@prisma/client";
 
 const SETTINGS_CACHE_TTL_MS = 60_000;
-let settingsCache:
-  | { value: Awaited<ReturnType<typeof getAppSettings>>; expiresAt: number }
-  | null = null;
+type AppSettings = AppSetting;
+let settingsCache: { value: AppSettings; expiresAt: number } | null = null;
 
 export async function getAppSettings() {
   if (settingsCache && Date.now() < settingsCache.expiresAt) {

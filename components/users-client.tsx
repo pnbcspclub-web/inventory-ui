@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Button,
   Card,
@@ -120,41 +120,47 @@ export default function UsersClient() {
     URL.revokeObjectURL(url);
   };
 
-  const sortByCreatedAt = (items: User[]) =>
-    [...items].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+  const sortByCreatedAt = useCallback(
+    (items: User[]) =>
+      [...items].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      ),
+    []
+  );
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     const res = await fetch("/api/users", { cache: "no-store" });
     if (res.ok) setUsers(sortByCreatedAt(await res.json()));
     setLoading(false);
-  };
+  }, [sortByCreatedAt]);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
+
+  const openModal = useCallback(
+    (user?: User) => {
+      setEditing(user ?? null);
+      setOpen(true);
+      if (user) {
+        form.setFieldsValue({
+          ...user,
+          shopExpiry: user.shopExpiry ? dayjs(user.shopExpiry) : null,
+        });
+      } else {
+        form.resetFields();
+      }
+    },
+    [form]
+  );
 
   useEffect(() => {
     if (mode === "create" && !open && !editing) {
       openModal();
       router.replace("/admin/users");
     }
-  }, [editing, mode, open, router]);
-
-  const openModal = (user?: User) => {
-    setEditing(user ?? null);
-    setOpen(true);
-    if (user) {
-      form.setFieldsValue({
-        ...user,
-        shopExpiry: user.shopExpiry ? dayjs(user.shopExpiry) : null,
-      });
-    } else {
-      form.resetFields();
-    }
-  };
+  }, [editing, mode, open, openModal, router]);
 
   const onFinish = async (values: UserFormValues) => {
     const payload = {
@@ -215,17 +221,6 @@ export default function UsersClient() {
     }
     const data = await res.json();
     throw new Error(data.error ?? "Unable to update user");
-  };
-
-  const extendExpiry = async (user: User, days: number) => {
-    const baseDate = user.shopExpiry ? dayjs(user.shopExpiry) : dayjs();
-    const nextExpiry = baseDate.add(days, "day").toISOString();
-    try {
-      await updateUser(user.id, { shopExpiry: nextExpiry });
-      message.success(`Extended expiry by ${days} days`);
-    } catch (error) {
-      message.error((error as Error).message);
-    }
   };
 
   const toggleStatus = async (user: User) => {

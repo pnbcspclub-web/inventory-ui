@@ -92,8 +92,7 @@ export async function PUT(req: Request, { params }: Params) {
     });
 
     return NextResponse.json(updated);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown";
+  } catch {
     return NextResponse.json({ error: "Unable to update order" }, { status: 500 });
   }
 }

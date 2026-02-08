@@ -2,13 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { Button, Card, Col, Input, List, Row, Statistic, Typography } from "antd";
+import { Button, Card, Col, List, Row, Statistic, Typography } from "antd";
 import Link from "next/link";
 
 export default function DashboardPage() {
   const { data: session } = useSession();
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [salesToday, setSalesToday] = useState(0);
   const [salesMonth, setSalesMonth] = useState(0);
@@ -22,7 +20,6 @@ export default function DashboardPage() {
   const [inactiveShopList, setInactiveShopList] = useState<
     { id: string; shopName?: string | null; name?: string | null; phone?: string | null }[]
   >([]);
-  const [search, setSearch] = useState("");
   const rupee = String.fromCharCode(0x20b9);
 
   const pollRef = useRef<number | null>(null);
@@ -90,12 +87,6 @@ export default function DashboardPage() {
     () => session?.user?.shopName ?? session?.user?.name ?? "Shopkeeper",
     [session]
   );
-
-  const onSearch = () => {
-    const value = search.trim();
-    if (!value) return;
-    router.push(`/products?search=${encodeURIComponent(value)}`);
-  };
 
   return (
     <div className="space-y-8">

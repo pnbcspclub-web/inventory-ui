@@ -3,9 +3,10 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-type Params = { params: { id: string } };
+type Params = { params: Promise<{ id: string }> };
 
 export async function PUT(req: Request, { params }: Params) {
+  const { id } = await params;
   const session = await auth();
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -15,7 +16,7 @@ export async function PUT(req: Request, { params }: Params) {
     ? await bcrypt.hash(body.password, 10)
     : undefined;
   const user = await prisma.user.update({
-    where: { id: params.id },
+    where: { id },
     data: {
       name: body.name ?? undefined,
       userCode: body.userCode ?? undefined,
@@ -44,10 +45,11 @@ export async function PUT(req: Request, { params }: Params) {
 }
 
 export async function DELETE(_: Request, { params }: Params) {
+  const { id } = await params;
   const session = await auth();
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  await prisma.user.delete({ where: { id: params.id } });
+  await prisma.user.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }

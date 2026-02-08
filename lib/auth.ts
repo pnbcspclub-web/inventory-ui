@@ -2,6 +2,7 @@ import type { NextAuthOptions } from "next-auth";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
+import { Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
@@ -55,7 +56,8 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.role = (user as { role?: string }).role ?? "SHOPKEEPER";
+        const nextRole = (user as { role?: Role }).role ?? Role.SHOPKEEPER;
+        token.role = nextRole;
         token.uid = (user as { id?: string }).id;
         token.userCode = (user as { userCode?: string | null }).userCode ?? null;
         token.address = (user as { address?: string | null }).address ?? null;

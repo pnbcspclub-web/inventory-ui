@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 export async function GET() {
   const session = await auth();
@@ -8,7 +9,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const isShopkeeper = session.user.role === "SHOPKEEPER";
-  const where = isShopkeeper
+  const where: Prisma.OrderWhereInput | undefined = isShopkeeper
     ? { type: "SALE", createdById: session.user.id }
     : undefined;
   const orders = await prisma.order.findMany({
@@ -60,8 +61,7 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json(order, { status: 201 });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown";
+  } catch {
     return NextResponse.json({ error: "Unable to save order" }, { status: 500 });
   }
 }
