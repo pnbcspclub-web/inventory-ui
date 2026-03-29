@@ -1,0 +1,141 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
+import { Card, Col, Row, Statistic } from "antd";
+
+type DailyBucket = { date: string; total: number };
+type SalesSummary = {
+  count: number;
+  total: number;
+  units: number;
+  average: number;
+  last7Days: DailyBucket[];
+};
+
+const rupee = String.fromCharCode(0x20b9);
+
+const formatMoney = (value: number) =>
+  `${rupee}${Number(value).toLocaleString("en-IN")}`;
+
+export default function InsightsPage() {
+  const { data: session } = useSession();
+  const [summary, setSummary] = useState<SalesSummary>({
+    count: 0,
+    total: 0,
+    units: 0,
+    average: 0,
+    last7Days: [],
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      const res = await fetch("/api/sales?summary=1");
+      if (res.ok) {
+        const data = (await res.json()) as SalesSummary;
+        setSummary(data);
+      }
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
+
+  const isAdmin = session?.user?.role === "ADMIN";
+
+  const stats = useMemo(() => {
+    return {
+      totals: {
+        count: summary.count,
+        sales: summary.total,
+        units: summary.units,
+      },
+      average: summary.average,
+    };
+  }, [summary]);
+
+  const last7Days = useMemo(() => summary.last7Days, [summary]);
+
+  const maxDay = Math.max(1, ...last7Days.map((d) => d.total));
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-2xl font-semibold text-[color:var(--foreground)]">
+          Insights
+        </h1>
+          <p className="text-sm text-[color:var(--muted)]">
+            {isAdmin
+            ? "All shop sales performance at a glance."
+            : "Sales insights based on your shop activity."}
+          </p>
+      </div>
+
+      <Row gutter={[16, 16]}>
+        <Col xs={24} sm={12} lg={6}>
+          <Card loading={loading} className="border border-black/5 shadow-sm">
+            <Statistic title="Total Sales" value={formatMoney(stats.totals.sales)} />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card loading={loading} className="border border-black/5 shadow-sm">
+            <Statistic title="Units Sold" value={stats.totals.units} />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card loading={loading} className="border border-black/5 shadow-sm">
+            <Statistic title="Sales Logged" value={stats.totals.count} />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card loading={loading} className="border border-black/5 shadow-sm">
+            <Statistic title="Avg Sale Value" value={formatMoney(stats.average)} />
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]}>
+        <Col xs={24} lg={16}>
+          <Card
+            title="Last 7 Days Sales"
+            className="border border-black/5 shadow-sm"
+            loading={loading}
+          >
+            <div className="grid grid-cols-7 gap-3">
+              {last7Days.map((day) => (
+                <div key={day.date} className="flex flex-col items-center gap-2">
+                  <div className="relative h-32 w-full rounded-full bg-[color:var(--surface-muted)]">
+                    <div
+                      className="absolute bottom-0 left-0 right-0 rounded-full bg-[color:var(--brand)]"
+                      style={{ height: `${Math.round((day.total / maxDay) * 100)}%` }}
+                    />
+                  </div>
+                  <div className="text-[10px] font-semibold text-[color:var(--muted)]">
+                    {day.date.slice(5)}
+                  </div>
+                  <div className="text-xs font-semibold text-[color:var(--foreground)]">
+                    {formatMoney(day.total)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} lg={8}>
+          <Card
+            title="Sales Notes"
+            className="border border-black/5 shadow-sm"
+            loading={loading}
+          >
+            <div className="space-y-3 text-sm text-[color:var(--muted)]">
+              <div className="rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-muted)] p-3 text-xs text-[color:var(--muted)]">
+                Tip: Record sales daily to keep your revenue trend accurate.
+              </div>
+            </div>
+          </Card>
+        </Col>
+      </Row>
+    </div>
+  );
+}

@@ -36,17 +36,20 @@ const getPreferredTheme = () => {
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [mode, setMode] = useState<ThemeMode>("light");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const stored = readStoredTheme();
-    setMode(stored ?? getPreferredTheme());
+    const preferred = getPreferredTheme();
+    setMode(stored ?? preferred);
+    setMounted(true);
   }, []);
 
   useEffect(() => {
-    if (typeof document === "undefined") return;
+    if (!mounted) return;
     document.documentElement.setAttribute("data-theme", mode);
     window.localStorage.setItem(THEME_STORAGE_KEY, mode);
-  }, [mode]);
+  }, [mode, mounted]);
 
   const value = useMemo(
     () => ({
@@ -57,27 +60,38 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     [mode]
   );
 
+  // Prevent hydration mismatch by not rendering theme-specific components until mounted
+  // We still render children to allow SEO and initial paint, but we wrap them
+  // to avoid Ant Design's ConfigProvider flicker during hydration.
   return (
     <ThemeContext.Provider value={value}>
-      <ConfigProvider
-        theme={{
-          token: {
-            colorPrimary: "var(--brand)",
-            colorSuccess: "var(--accent)",
-            colorTextBase: "var(--foreground)",
-            colorBgLayout: "var(--background)",
-            colorBgContainer: "var(--surface)",
-            colorBorder: "var(--border)",
-            fontFamily: "var(--font-manrope)",
-          },
-          algorithm:
-            mode === "dark"
-              ? antdTheme.darkAlgorithm
-              : antdTheme.defaultAlgorithm,
-        }}
-      >
-        {children}
-      </ConfigProvider>
+      {!mounted ? (
+        <div style={{ visibility: "hidden" }}>{children}</div>
+      ) : (
+        <ConfigProvider
+          theme={{
+            token: {
+              colorPrimary: mode === "dark" ? "#3b82f6" : "#2563eb",
+              colorSuccess: "#10b981",
+              colorError: "#ef4444",
+              colorWarning: "#f59e0b",
+              colorInfo: "#3b82f6",
+              colorTextBase: mode === "dark" ? "#f8fafc" : "#1a1a1a",
+              colorBgLayout: mode === "dark" ? "#0f172a" : "#fdfdfd",
+              colorBgContainer: mode === "dark" ? "#1e293b" : "#ffffff",
+              colorBorder: mode === "dark" ? "#334155" : "#e2e8f0",
+              fontFamily: "var(--font-manrope)",
+              borderRadius: 12,
+            },
+            algorithm:
+              mode === "dark"
+                ? antdTheme.darkAlgorithm
+                : antdTheme.defaultAlgorithm,
+          }}
+        >
+          {children}
+        </ConfigProvider>
+      )}
     </ThemeContext.Provider>
   );
 }

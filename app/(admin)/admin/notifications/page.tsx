@@ -36,7 +36,7 @@ export default function AdminNotificationsPage() {
 
   const fetchNotifications = async () => {
     setLoading(true);
-    const res = await fetch("/api/notifications", { cache: "no-store" });
+    const res = await fetch("/api/notifications?take=100", { cache: "no-store" });
     if (res.ok) {
       setItems(await res.json());
     }
@@ -44,7 +44,7 @@ export default function AdminNotificationsPage() {
   };
 
   const fetchUsers = async () => {
-    const res = await fetch("/api/users", { cache: "no-store" });
+    const res = await fetch("/api/users?view=picker&take=200", { cache: "no-store" });
     if (res.ok) {
       const data = (await res.json()) as {
         id: string;

@@ -3,27 +3,45 @@ import bcrypt from "bcryptjs";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+const defaultUserSelect = {
+  id: true,
+  name: true,
+  email: true,
+  role: true,
+  userCode: true,
+  shopName: true,
+  shopStatus: true,
+  shopExpiry: true,
+  address: true,
+  phone: true,
+  createdAt: true,
+} as const;
+
+const pickerUserSelect = {
+  id: true,
+  name: true,
+  email: true,
+  shopName: true,
+} as const;
+
+export async function GET(req: Request) {
   const session = await auth();
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+  const { searchParams } = new URL(req.url);
+  const view = searchParams.get("view");
+  const requestedTake = Number(searchParams.get("take") ?? 0);
+  const take =
+    Number.isFinite(requestedTake) && requestedTake > 0
+      ? Math.min(requestedTake, 500)
+      : undefined;
+
   const users = await prisma.user.findMany({
     where: { role: "SHOPKEEPER" },
     orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      userCode: true,
-      shopName: true,
-      shopStatus: true,
-      shopExpiry: true,
-      address: true,
-      phone: true,
-      createdAt: true,
-    },
+    take,
+    select: view === "picker" ? pickerUserSelect : defaultUserSelect,
   });
   return NextResponse.json(users);
 }

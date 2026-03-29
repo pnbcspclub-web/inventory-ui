@@ -50,11 +50,13 @@ export default function UsersClient() {
   const [editing, setEditing] = useState<User | null>(null);
   const [reminderOpen, setReminderOpen] = useState(false);
   const [reminderTarget, setReminderTarget] = useState<User | null>(null);
+  const [searchValue, setSearchValue] = useState("");
   const [form] = Form.useForm();
   const searchParams = useSearchParams();
   const router = useRouter();
   const mode = searchParams.get("mode");
   const filter = searchParams.get("filter");
+  const query = searchParams.get("q")?.trim() ?? "";
   const expiringDays = Number(searchParams.get("days")) || 2;
 
   const isExpiringWithin = (value: string | null | undefined, days: number) => {
@@ -139,6 +141,10 @@ export default function UsersClient() {
     fetchData();
   }, [fetchData]);
 
+  useEffect(() => {
+    setSearchValue(query);
+  }, [query]);
+
   const openModal = useCallback(
     (user?: User) => {
       setEditing(user ?? null);
@@ -167,46 +173,116 @@ export default function UsersClient() {
       ...values,
       shopExpiry: values.shopExpiry ? values.shopExpiry.toISOString() : null,
     };
-    const res = await fetch(editing ? `/api/users/${editing.id}` : "/api/users", {
-      method: editing ? "PUT" : "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+    const optimisticId = editing?.id ?? `temp-${Date.now()}`;
+    const optimisticUser: User = {
+      id: optimisticId,
+      name: values.name ?? null,
+      email: values.email?.toLowerCase() ?? editing?.email ?? "",
+      role: "SHOPKEEPER",
+      userCode: values.userCode ?? null,
+      shopName: values.shopName ?? null,
+      shopStatus: values.shopStatus ?? "ACTIVE",
+      shopExpiry: values.shopExpiry ? values.shopExpiry.toISOString() : null,
+      address: values.address ?? null,
+      phone: values.phone ?? null,
+      createdAt: editing?.createdAt ?? new Date().toISOString(),
+    };
+    const prevSnapshot = users.find((user) => user.id === optimisticId);
+
+    setOpen(false);
+    setEditing(null);
+    setUsers((prev) => {
+      if (editing) {
+        return sortByCreatedAt(
+          prev.map((item) => (item.id === optimisticId ? optimisticUser : item))
+        );
+      }
+      return sortByCreatedAt([optimisticUser, ...prev]);
     });
-    if (res.ok) {
-      const saved = (await res.json()) as User;
-      message.success(`User ${editing ? "updated" : "created"}`);
-      setOpen(false);
-      setEditing(null);
+
+    const hide = message.loading(`User ${editing ? "updating" : "creating"}...`, 0);
+    try {
+      const res = await fetch(
+        editing ? `/api/users/${editing.id}` : "/api/users",
+        {
+          method: editing ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+      if (res.ok) {
+        const saved = (await res.json()) as User;
+        message.success(`User ${editing ? "updated" : "created"}`);
+        setUsers((prev) =>
+          sortByCreatedAt(
+            prev.map((item) => (item.id === optimisticId ? saved : item))
+          )
+        );
+      } else {
+        const data = await res.json();
+        message.error(data.error ?? "Unable to save user");
+        setUsers((prev) => {
+          if (editing && prevSnapshot) {
+            return sortByCreatedAt(
+              prev.map((item) => (item.id === optimisticId ? prevSnapshot : item))
+            );
+          }
+          return prev.filter((item) => item.id !== optimisticId);
+        });
+      }
+    } catch {
+      message.error("Unable to save user");
       setUsers((prev) => {
-        if (editing) {
+        if (editing && prevSnapshot) {
           return sortByCreatedAt(
-            prev.map((item) => (item.id === saved.id ? saved : item))
+            prev.map((item) => (item.id === optimisticId ? prevSnapshot : item))
           );
         }
-        return sortByCreatedAt([saved, ...prev]);
+        return prev.filter((item) => item.id !== optimisticId);
       });
-    } else {
-      const data = await res.json();
-      message.error(data.error ?? "Unable to save user");
+    } finally {
+      hide();
     }
   };
 
   const onDelete = async (id: string) => {
-    const res = await fetch(`/api/users/${id}`, { method: "DELETE" });
-    if (res.ok) {
-      message.success("User deleted");
-      if (editing?.id === id) {
-        setOpen(false);
-        setEditing(null);
+    const removed = users.find((user) => user.id === id);
+    setUsers((prev) => prev.filter((item) => item.id !== id));
+    try {
+      const res = await fetch(`/api/users/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        message.success("User deleted");
+        if (editing?.id === id) {
+          setOpen(false);
+          setEditing(null);
+        }
+      } else {
+        const data = await res.json();
+        message.error(data.error ?? "Unable to delete user");
+        if (removed) {
+          setUsers((prev) => sortByCreatedAt([removed, ...prev]));
+        }
       }
-      setUsers((prev) => prev.filter((item) => item.id !== id));
-    } else {
-      const data = await res.json();
-      message.error(data.error ?? "Unable to delete user");
+    } catch {
+      message.error("Unable to delete user");
+      if (removed) {
+        setUsers((prev) => sortByCreatedAt([removed, ...prev]));
+      }
     }
   };
 
   const updateUser = async (id: string, payload: Partial<UserFormValues>) => {
+    const previous = users.find((user) => user.id === id);
+    if (previous) {
+      const optimistic: User = {
+        ...previous,
+        ...payload,
+        shopExpiry: payload.shopExpiry ? payload.shopExpiry.toISOString() : previous.shopExpiry,
+      };
+      setUsers((prev) =>
+        sortByCreatedAt(prev.map((item) => (item.id === id ? optimistic : item)))
+      );
+    }
     const res = await fetch(`/api/users/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -220,6 +296,11 @@ export default function UsersClient() {
       return saved;
     }
     const data = await res.json();
+    if (previous) {
+      setUsers((prev) =>
+        sortByCreatedAt(prev.map((item) => (item.id === id ? previous : item)))
+      );
+    }
     throw new Error(data.error ?? "Unable to update user");
   };
 
@@ -274,29 +355,94 @@ export default function UsersClient() {
     router.replace(`/admin/users?${params.toString()}`);
   };
 
-  const filteredUsers = useMemo(() => {
-    if (filter === "expiring") {
-      return users.filter((user) => isExpiringWithin(user.shopExpiry, expiringDays));
+  const setSearchFilter = (value: string) => {
+    const nextValue = value.trim();
+    const params = new URLSearchParams(searchParams.toString());
+    if (nextValue) {
+      params.set("q", nextValue);
+    } else {
+      params.delete("q");
     }
-    return users;
-  }, [expiringDays, filter, users]);
+    router.replace(`/admin/users?${params.toString()}`);
+  };
+
+  const filteredUsers = useMemo(() => {
+    const normalizedQuery = query.toLowerCase();
+
+    return users.filter((user) => {
+      const matchesExpiring =
+        filter !== "expiring" || isExpiringWithin(user.shopExpiry, expiringDays);
+
+      if (!matchesExpiring) {
+        return false;
+      }
+
+      if (!normalizedQuery) {
+        return true;
+      }
+
+      const fields = [
+        user.shopName,
+        user.name,
+        user.email,
+        user.userCode,
+      ];
+
+      return fields.some((field) =>
+        field?.toLowerCase().includes(normalizedQuery)
+      );
+    });
+  }, [expiringDays, filter, query, users]);
 
   return (
-    <Card
-      title="User Management"
-      extra={
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={fetchData} loading={loading}>
-            Refresh
-          </Button>
-          <Button onClick={exportCsv}>Export CSV</Button>
-          <Button type="primary" onClick={() => openModal()}>
-            Add User
-          </Button>
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-surface p-6 rounded-[24px] border border-border">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight m-0">User Management</h1>
+          <p className="text-muted text-sm font-medium">Manage platform users and shop statuses.</p>
         </div>
-      }
-      className="shadow-sm border border-black/5"
-    >
+        <div className="flex flex-wrap items-center gap-3">
+          <Input.Search
+            allowClear
+            placeholder="Search shop, owner, email, code..."
+            value={searchValue}
+            onChange={(event) => setSearchValue(event.target.value)}
+            onSearch={setSearchFilter}
+            className="w-full sm:w-[300px]"
+            size="large"
+          />
+          <div className="flex items-center gap-2">
+            <Button 
+              onClick={fetchData} 
+              loading={loading}
+              size="large"
+              className="rounded-xl border-border hover:border-brand hover:text-brand"
+            >
+              Refresh
+            </Button>
+            <Button 
+              onClick={exportCsv}
+              size="large"
+              className="rounded-xl border-border hover:border-brand hover:text-brand"
+            >
+              Export CSV
+            </Button>
+            <Button 
+              type="primary" 
+              onClick={() => openModal()}
+              size="large"
+              className="rounded-xl bg-brand hover:bg-brand-strong border-none font-bold"
+            >
+              Add User
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <Card
+        variant="borderless"
+        className="overflow-hidden rounded-[24px] border border-border bg-surface shadow-none"
+      >
       {filter === "expiring" ? (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -468,5 +614,6 @@ export default function UsersClient() {
         </Form>
       </Modal>
     </Card>
+    </div>
   );
 }

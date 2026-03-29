@@ -1,11 +1,10 @@
 import type { NextAuthOptions } from "next-auth";
-import NextAuth from "next-auth";
-import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
+import Credentials from "next-auth/providers/credentials";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -67,50 +66,50 @@ export const authOptions: NextAuthOptions = {
           .shopStatus;
         token.shopExpiry = (user as { shopExpiry?: string | null }).shopExpiry ?? null;
       }
+
+      if (token.uid) {
+        const currentUser = await prisma.user.findUnique({
+          where: { id: token.uid as string },
+          select: {
+            role: true,
+            userCode: true,
+            address: true,
+            phone: true,
+            shopName: true,
+            shopStatus: true,
+            shopExpiry: true,
+          },
+        });
+
+        if (currentUser) {
+          token.role = currentUser.role;
+          token.userCode = currentUser.userCode;
+          token.address = currentUser.address;
+          token.phone = currentUser.phone;
+          token.shopName = currentUser.shopName;
+          token.shopStatus = currentUser.shopStatus;
+          token.shopExpiry = currentUser.shopExpiry
+            ? currentUser.shopExpiry.toISOString()
+            : null;
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
-      if (!session.user || !token.uid) {
-        return session;
+      if (session.user && token.uid) {
+        session.user.role = token.role as Role;
+        session.user.id = token.uid as string;
+        session.user.userCode = token.userCode as string | null;
+        session.user.address = token.address as string | null;
+        session.user.phone = token.phone as string | null;
+        session.user.shopName = token.shopName as string | null;
+        session.user.shopStatus = token.shopStatus as "ACTIVE" | "SUSPENDED";
+        session.user.shopExpiry = token.shopExpiry as string | null;
       }
-
-      const user = await prisma.user.findUnique({
-        where: { id: token.uid as string },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          userCode: true,
-          address: true,
-          phone: true,
-          shopName: true,
-          shopStatus: true,
-          shopExpiry: true,
-        },
-      });
-
-      if (!user) {
-        return session;
-      }
-
-      session.user.role = user.role;
-      session.user.id = user.id;
-      session.user.userCode = user.userCode ?? null;
-      session.user.address = user.address ?? null;
-      session.user.phone = user.phone ?? null;
-      session.user.shopName = user.shopName ?? null;
-      session.user.shopStatus = user.shopStatus ?? "ACTIVE";
-      session.user.shopExpiry = user.shopExpiry ? user.shopExpiry.toISOString() : null;
-      session.user.name = user.name ?? session.user.name ?? null;
-      session.user.email = user.email ?? session.user.email ?? null;
-
       return session;
     },
   },
 };
 
 export const auth = () => getServerSession(authOptions);
-
-const handler = NextAuth(authOptions);
-export { handler as GET, handler as POST };

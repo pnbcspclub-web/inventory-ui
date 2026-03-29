@@ -1,17 +1,18 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireActiveShopkeeper } from "@/lib/session-guards";
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_: Request, { params }: Params) {
   const { id } = await params;
-  const session = await auth();
+  const { response, session } = requireActiveShopkeeper(await auth());
+  if (response) {
+    return response;
+  }
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  if (session.user.role !== "SHOPKEEPER") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const product = await prisma.product.findFirst({
     where: { id, ownerId: session.user.id },
@@ -35,9 +36,12 @@ export async function GET(_: Request, { params }: Params) {
 
 export async function PUT(req: Request, { params }: Params) {
   const { id } = await params;
-  const session = await auth();
-  if (!session || session.user.role !== "SHOPKEEPER") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const { response, session } = requireActiveShopkeeper(await auth());
+  if (response) {
+    return response;
+  }
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const body = await req.json();
   const existing = await prisma.product.findFirst({
@@ -85,16 +89,12 @@ export async function PUT(req: Request, { params }: Params) {
 
 export async function DELETE(_: Request, { params }: Params) {
   const { id } = await params;
-  const session = await auth();
-  if (!session || session.user.role !== "SHOPKEEPER") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const { response, session } = requireActiveShopkeeper(await auth());
+  if (response) {
+    return response;
   }
-  const existing = await prisma.product.findFirst({
-    where: { id, ownerId: session.user.id },
-    select: { id: true },
-  });
-  if (!existing) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const deleted = await prisma.product.deleteMany({
     where: { id, ownerId: session.user.id },

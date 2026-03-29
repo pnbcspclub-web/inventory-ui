@@ -11,6 +11,7 @@ import {
   Input,
   InputNumber,
   Modal,
+  Popconfirm,
   Select,
   Table,
   Tag,
@@ -78,6 +79,7 @@ export default function ProductsPage() {
   const shopPhone = session?.user?.phone ?? "XXXXXXXXXX";
   const shopAddress = session?.user?.address ?? "Address not set";
   const isShopkeeper = session?.user?.role === "SHOPKEEPER";
+  const isFull = products.length >= 100;
 
   const fetchData = async () => {
     setLoading(true);
@@ -112,27 +114,59 @@ export default function ProductsPage() {
   }, [nextSerialNumber, userCode]);
 
   const onCreate = async (values: ProductFormValues) => {
+    if (isFull) {
+      message.error("Inventory full (max 100 products)");
+      return;
+    }
+    const quantity = Number(values.quantity ?? 0);
+    const optimisticId = `temp-${Date.now()}`;
+    const optimisticStatus = quantity === 0 ? "SOLD" : values.status ?? "ACTIVE";
+    const optimisticProduct: EditableProduct = {
+      id: optimisticId,
+      name: values.name,
+      sku: nextCode,
+      description: values.description ?? null,
+      price: Number(values.price),
+      quantity,
+      status: optimisticStatus,
+      serialNumber: nextSerialNumber,
+      createdAt: new Date().toISOString(),
+    };
     const payload = {
       name: values.name,
       description: values.description,
       price: Number(values.price),
-      quantity: Number(values.quantity ?? 0),
+      quantity,
       status: values.status,
     };
-    const res = await fetch("/api/products", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (res.ok) {
-      const created = (await res.json()) as EditableProduct;
-      message.success("Product created");
-      form.resetFields();
-      setAddOpen(false);
-      setProducts((prev) => sortBySerial([...prev, created]));
-    } else {
-      const data = await res.json();
-      message.error(data.error ?? "Unable to create product");
+    setProducts((prev) => sortBySerial([...prev, optimisticProduct]));
+    form.resetFields();
+    setAddOpen(false);
+    const hide = message.loading("Creating product...", 0);
+    try {
+      const res = await fetch("/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        const created = (await res.json()) as EditableProduct;
+        message.success("Product created");
+        setProducts((prev) =>
+          sortBySerial(
+            prev.map((item) => (item.id === optimisticId ? created : item))
+          )
+        );
+      } else {
+        const data = await res.json();
+        message.error(data.error ?? "Unable to create product");
+        setProducts((prev) => prev.filter((item) => item.id !== optimisticId));
+      }
+    } catch {
+      message.error("Unable to create product");
+      setProducts((prev) => prev.filter((item) => item.id !== optimisticId));
+    } finally {
+      hide();
     }
   };
 
@@ -156,45 +190,87 @@ export default function ProductsPage() {
   const saveEdit = async () => {
     const values = (await editForm.validateFields()) as ProductFormValues;
     if (!editing) return;
-    const res = await fetch(`/api/products/${editing.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: values.name,
-        description: values.description,
-        price: Number(values.price),
-        quantity: Number(values.quantity),
-        status: values.status,
-      }),
-    });
-    if (res.ok) {
-      const updated = (await res.json()) as EditableProduct;
-      message.success("Product updated");
-      setEditing(null);
+    const prevRecord = editing;
+    const nextQuantity = Number(values.quantity);
+    const nextStatus = nextQuantity === 0 ? "SOLD" : values.status ?? editing.status;
+    const optimistic: EditableProduct = {
+      ...editing,
+      name: values.name,
+      description: values.description,
+      price: Number(values.price),
+      quantity: nextQuantity,
+      status: nextStatus,
+    };
+    setEditing(null);
+    setProducts((prev) =>
+      sortBySerial(prev.map((item) => (item.id === optimistic.id ? optimistic : item)))
+    );
+    const hide = message.loading("Saving changes...", 0);
+    try {
+      const res = await fetch(`/api/products/${editing.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: values.name,
+          description: values.description,
+          price: Number(values.price),
+          quantity: nextQuantity,
+          status: values.status,
+        }),
+      });
+      if (res.ok) {
+        const updated = (await res.json()) as EditableProduct;
+        message.success("Product updated");
+        setProducts((prev) =>
+          sortBySerial(
+            prev.map((item) => (item.id === updated.id ? updated : item))
+          )
+        );
+      } else {
+        const data = await res.json();
+        message.error(data.error ?? "Unable to update product");
+        setProducts((prev) =>
+          sortBySerial(
+            prev.map((item) => (item.id === prevRecord.id ? prevRecord : item))
+          )
+        );
+      }
+    } catch {
+      message.error("Unable to update product");
       setProducts((prev) =>
-        sortBySerial(prev.map((item) => (item.id === updated.id ? updated : item)))
+        sortBySerial(prev.map((item) => (item.id === prevRecord.id ? prevRecord : item)))
       );
-    } else {
-      const data = await res.json();
-      message.error(data.error ?? "Unable to update product");
+    } finally {
+      hide();
     }
   };
 
   const deleteRow = async (id: string) => {
-    const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
-    if (res.ok) {
-      message.success("Product deleted");
-      if (editing?.id === id) {
-        setEditing(null);
+    const removed = products.find((item) => item.id === id);
+    if (editing?.id === id) {
+      setEditing(null);
+    }
+    if (selling?.id === id) {
+      setSellOpen(false);
+      setSelling(null);
+    }
+    setProducts((prev) => prev.filter((item) => item.id !== id));
+    try {
+      const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        message.success("Product deleted");
+      } else {
+        const data = await res.json();
+        message.error(data.error ?? "Unable to delete product");
+        if (removed) {
+          setProducts((prev) => sortBySerial([...prev, removed]));
+        }
       }
-      if (selling?.id === id) {
-        setSellOpen(false);
-        setSelling(null);
+    } catch {
+      message.error("Unable to delete product");
+      if (removed) {
+        setProducts((prev) => sortBySerial([...prev, removed]));
       }
-      setProducts((prev) => prev.filter((item) => item.id !== id));
-    } else {
-      const data = await res.json();
-      message.error(data.error ?? "Unable to delete product");
     }
   };
 
@@ -202,27 +278,41 @@ export default function ProductsPage() {
     const values = await sellForm.validateFields();
     if (!selling) return;
     const sellQty = Number(values.quantity ?? 0);
-    const res = await fetch("/api/sales", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ productId: selling.id, quantity: sellQty }),
-    });
-    if (res.ok) {
-      message.success("Sale recorded");
+    const prevSelling = selling;
+    setProducts((prev) =>
+      prev.map((item) => {
+        if (item.id !== selling.id) return item;
+        const nextQty = Math.max(0, item.quantity - sellQty);
+        const nextStatus = nextQty === 0 ? "SOLD" : item.status;
+        return { ...item, quantity: nextQty, status: nextStatus };
+      })
+    );
+    setSellOpen(false);
+    setSelling(null);
+    sellForm.resetFields();
+    const hide = message.loading("Recording sale...", 0);
+    try {
+      const res = await fetch("/api/sales", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId: selling.id, quantity: sellQty }),
+      });
+      if (res.ok) {
+        message.success("Sale recorded");
+      } else {
+        const data = await res.json();
+        message.error(data.error ?? "Unable to record sale");
+        setProducts((prev) =>
+          prev.map((item) => (item.id === prevSelling.id ? prevSelling : item))
+        );
+      }
+    } catch {
+      message.error("Unable to record sale");
       setProducts((prev) =>
-        prev.map((item) => {
-          if (item.id !== selling.id) return item;
-          const nextQty = Math.max(0, item.quantity - sellQty);
-          const nextStatus = nextQty === 0 ? "SOLD" : item.status;
-          return { ...item, quantity: nextQty, status: nextStatus };
-        })
+        prev.map((item) => (item.id === prevSelling.id ? prevSelling : item))
       );
-      setSellOpen(false);
-      setSelling(null);
-      sellForm.resetFields();
-    } else {
-      const data = await res.json();
-      message.error(data.error ?? "Unable to record sale");
+    } finally {
+      hide();
     }
   };
 
@@ -308,16 +398,24 @@ export default function ProductsPage() {
   };
 
   const copyWhatsapp = async (product: Product) => {
-    const messageText = `Product Code: ${product.sku}
-Name: ${product.name}
-Details: ${product.description ?? "-"}
-Price: ${rupee}${Number(product.price).toLocaleString("en-IN")}
-Stock: ${product.quantity > 0 ? "Available" : "Sold Out"}
-Reply Yes To Buy
-${shopName}
-Contact: ${shopPhone}
-${shopAddress}`;
-
+    const messageText = `✨ *${product.name}* ✨
+  
+  🆔 *Product Code:* ${product.sku}
+  
+  📝 *Details:*
+  ${product.description ?? "-"}
+  
+  💰 *Price:* ${rupee}${Number(product.price).toLocaleString("en-IN")}
+  
+  📦 *Stock:* ${product.quantity > 0 ? "✅ Available" : "❌ Sold Out"}
+  
+  👉 *Reply "YES" to Buy*
+  
+  ━━━━━━━━━━━━━━━
+  🏪 *${shopName}*
+  📞 ${shopPhone}
+  📍 ${shopAddress}
+  ━━━━━━━━━━━━━━━`;
     try {
       await navigator.clipboard.writeText(messageText);
       message.success("WhatsApp message copied");
@@ -344,6 +442,15 @@ ${shopAddress}`;
         />
       ) : null}
 
+      {isFull ? (
+        <Alert
+          type="error"
+          message="Inventory full"
+          description="You have reached the maximum limit of 100 products. Delete some items to add more."
+          showIcon
+        />
+      ) : null}
+
       <Card className="shadow-sm border border-black/5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -359,7 +466,7 @@ ${shopAddress}`;
               type="primary"
               size="large"
               onClick={() => setAddOpen(true)}
-              disabled={!userCode}
+              disabled={!userCode || isFull}
             >
               Add Product
             </Button>
@@ -394,7 +501,7 @@ ${shopAddress}`;
           dataSource={filteredProducts}
           rowKey="id"
           loading={loading}
-          pagination={{ pageSize: 8 }}
+          pagination={{ pageSize: 20 }}
           onChange={handleTableChange}
           columns={[
             {
@@ -479,9 +586,15 @@ ${shopAddress}`;
                   <Button onClick={() => copyWhatsapp(record)}>
                     WhatsApp Copy
                   </Button>
-                  <Button danger onClick={() => deleteRow(record.id)}>
-                    Delete
-                  </Button>
+                  <Popconfirm
+                    title="Delete product?"
+                    description="This will permanently remove the item from inventory."
+                    onConfirm={() => deleteRow(record.id)}
+                    okText="Yes"
+                    cancelText="No"
+                  >
+                    <Button danger>Delete</Button>
+                  </Popconfirm>
                 </div>
               ),
             },

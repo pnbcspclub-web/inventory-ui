@@ -34,10 +34,10 @@ export async function GET() {
     prisma.user.count({
       where: { role: "SHOPKEEPER", shopStatus: "SUSPENDED" },
     }),
-    prisma.order.aggregate({
+    (prisma.sale?.aggregate({
       _sum: { total: true },
-      where: { type: "SALE", status: "COMPLETED", createdAt: { gte: todayStart } },
-    }),
+      where: { createdAt: { gte: todayStart } },
+    }) ?? Promise.resolve({ _sum: { total: 0 } })),
     prisma.user.count({
       where: {
         role: "SHOPKEEPER",
@@ -57,7 +57,7 @@ export async function GET() {
     newThisMonth,
     activeShops,
     inactiveShops,
-    todaySales: Number(todaySales._sum.total ?? 0),
+    todaySales: Number(todaySales?._sum?.total ?? 0),
     expiringSoonShops: expiringSoon,
     inactiveShopList,
   });

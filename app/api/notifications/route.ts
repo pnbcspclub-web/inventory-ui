@@ -1,13 +1,23 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isShopAccessBlocked } from "@/lib/session-guards";
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (isShopAccessBlocked(session)) {
+    return NextResponse.json({ error: "Shop access suspended" }, { status: 403 });
+  }
 
+  const { searchParams } = new URL(req.url);
+  const requestedTake = Number(searchParams.get("take") ?? 0);
+  const take =
+    Number.isFinite(requestedTake) && requestedTake > 0
+      ? Math.min(requestedTake, 200)
+      : undefined;
   const isAdmin = session.user.role === "ADMIN";
   const notifications = await prisma.notification.findMany({
     where: isAdmin
@@ -16,6 +26,7 @@ export async function GET() {
           OR: [{ userId: session.user.id }, { userId: null }],
         },
     orderBy: { createdAt: "desc" },
+    take,
     select: isAdmin
       ? {
           id: true,

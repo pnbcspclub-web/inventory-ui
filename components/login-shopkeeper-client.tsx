@@ -36,7 +36,7 @@ export default function LoginShopkeeperClient() {
           Manage products, quantities, and stock.
         </Typography.Text>
         <div className="mt-6">
-          {error ? <Alert type="error" message={error} className="mb-4" /> : null}
+          {error ? <Alert type="error" title={error} className="mb-4" /> : null}
           <Form layout="vertical" onFinish={onFinish}>
             <Form.Item
               label="Email"

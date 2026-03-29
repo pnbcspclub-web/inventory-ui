@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { getAppSettings } from "@/lib/settings";
+import { getAppSettings, invalidateAppSettingsCache } from "@/lib/settings";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
@@ -25,5 +25,6 @@ export async function PUT(req: Request) {
       maintenanceMode: Boolean(body.maintenanceMode),
     },
   });
+  invalidateAppSettingsCache();
   return NextResponse.json(updated);
 }

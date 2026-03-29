@@ -1,4 +1,4 @@
-Inventory management system built with Next.js (App Router), Prisma, Neon (Postgres), NextAuth, Tailwind, and Ant Design.
+Inventory management system built with Next.js (App Router), Prisma, MySQL, NextAuth, Tailwind, and Ant Design.
 
 ## Getting Started
 
@@ -8,25 +8,27 @@ Inventory management system built with Next.js (App Router), Prisma, Neon (Postg
 npm install
 ```
 
-2. Create `.env` from `.env.example` and set values:
+2. Create `.env` from `.env.example` and set values (use a MySQL connection string):
 
 ```bash
 cp .env.example .env
 ```
 
-3. Run Prisma migration and generate client:
+3. If you are switching from Postgres/Neon, delete the old Postgres migrations in `prisma/migrations` so Prisma can create MySQL migrations.
+
+4. Run Prisma migration and generate client:
 
 ```bash
 npx prisma migrate dev --name init
 ```
 
-4. Start the dev server:
+5. Start the dev server:
 
 ```bash
 npm run dev
 ```
 
-5. Bootstrap the first admin user (only works if no users exist yet):
+6. Bootstrap the first admin user (only works if no users exist yet):
 
 ```bash
 curl -X POST http://localhost:3000/api/bootstrap ^

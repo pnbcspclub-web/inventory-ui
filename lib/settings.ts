@@ -10,24 +10,33 @@ export async function getAppSettings() {
   if (settingsCache && Date.now() < settingsCache.expiresAt) {
     return settingsCache.value;
   }
-  const existing = await prisma.appSetting.findFirst();
-  if (existing) {
+  try {
+    const existing = await prisma.appSetting.findFirst();
+    if (existing) {
+      const value = {
+        ...existing,
+        appName: APP_NAME,
+        appDescription: APP_DESCRIPTION,
+      };
+      settingsCache = { value, expiresAt: Date.now() + SETTINGS_CACHE_TTL_MS };
+      return value;
+    }
+    const created = await prisma.appSetting.create({
+      data: {},
+    });
     const value = {
-      ...existing,
+      ...created,
       appName: APP_NAME,
       appDescription: APP_DESCRIPTION,
     };
     settingsCache = { value, expiresAt: Date.now() + SETTINGS_CACHE_TTL_MS };
     return value;
+  } catch (error) {
+    console.error("Failed to fetch app settings from database:", error);
+    throw error;
   }
-  const created = await prisma.appSetting.create({
-    data: {},
-  });
-  const value = {
-    ...created,
-    appName: APP_NAME,
-    appDescription: APP_DESCRIPTION,
-  };
-  settingsCache = { value, expiresAt: Date.now() + SETTINGS_CACHE_TTL_MS };
-  return value;
+}
+
+export function invalidateAppSettingsCache() {
+  settingsCache = null;
 }
