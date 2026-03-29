@@ -102,23 +102,25 @@ export default function InsightsPage() {
             className="border border-black/5 shadow-sm"
             loading={loading}
           >
-            <div className="grid grid-cols-7 gap-3">
-              {last7Days.map((day) => (
-                <div key={day.date} className="flex flex-col items-center gap-2">
-                  <div className="relative h-32 w-full rounded-full bg-[color:var(--surface-muted)]">
-                    <div
-                      className="absolute bottom-0 left-0 right-0 rounded-full bg-[color:var(--brand)]"
-                      style={{ height: `${Math.round((day.total / maxDay) * 100)}%` }}
-                    />
+            <div className="overflow-x-auto pb-4">
+              <div className="grid grid-cols-7 gap-3 min-w-[500px]">
+                {last7Days.map((day) => (
+                  <div key={day.date} className="flex flex-col items-center gap-2">
+                    <div className="relative h-24 lg:h-32 w-full rounded-full bg-[color:var(--surface-muted)]">
+                      <div
+                        className="absolute bottom-0 left-0 right-0 rounded-full bg-[color:var(--brand)] transition-all duration-500"
+                        style={{ height: `${Math.round((day.total / maxDay) * 100)}%` }}
+                      />
+                    </div>
+                    <div className="text-[9px] lg:text-[10px] font-semibold text-[color:var(--muted)]">
+                      {day.date.slice(5)}
+                    </div>
+                    <div className="text-[10px] lg:text-xs font-semibold text-[color:var(--foreground)] truncate w-full text-center">
+                      {formatMoney(day.total)}
+                    </div>
                   </div>
-                  <div className="text-[10px] font-semibold text-[color:var(--muted)]">
-                    {day.date.slice(5)}
-                  </div>
-                  <div className="text-xs font-semibold text-[color:var(--foreground)]">
-                    {formatMoney(day.total)}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </Card>
         </Col>

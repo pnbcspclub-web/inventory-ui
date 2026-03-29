@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
-import { Layout, Menu, Typography, Button, Dropdown, Badge, Avatar } from "antd";
+import { useMemo, useState, useEffect } from "react";
+import { Layout, Menu, Typography, Button, Dropdown, Badge, Avatar, Drawer } from "antd";
 import {
   AppstoreOutlined,
   TeamOutlined,
@@ -14,6 +14,7 @@ import {
   MoonOutlined,
   SunOutlined,
   LogoutOutlined,
+  MenuOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -25,6 +26,7 @@ const { Header, Content, Sider } = Layout;
 type AppShellProps = {
   children: React.ReactNode;
   user: {
+    id?: string | null;
     name?: string | null;
     email?: string | null;
     role?: string | null;
@@ -39,6 +41,7 @@ export default function AppShell({ children, user, appName }: AppShellProps) {
   const { mode: themeMode, toggle } = useTheme();
   const mode = searchParams.get("mode");
   const filter = searchParams.get("filter");
+  const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
 
   const activeKey = useMemo(() => {
     if (!isAdmin) return pathname;
@@ -55,59 +58,59 @@ export default function AppShell({ children, user, appName }: AppShellProps) {
             {
               key: "/admin/dashboard",
               icon: <AppstoreOutlined />,
-              label: <Link href="/admin/dashboard">Dashboard</Link>,
+              label: <Link href="/admin/dashboard" onClick={() => setMobileMenuVisible(false)}>Dashboard</Link>,
             },
             {
               key: "/admin/users",
               icon: <TeamOutlined />,
-              label: <Link href="/admin/users">All Users</Link>,
+              label: <Link href="/admin/users" onClick={() => setMobileMenuVisible(false)}>All Users</Link>,
             },
             {
               key: "/admin/users?mode=create",
               icon: <PlusCircleOutlined />,
-              label: <Link href="/admin/users?mode=create">Create New User</Link>,
+              label: <Link href="/admin/users?mode=create" onClick={() => setMobileMenuVisible(false)}>Create New User</Link>,
             },
             {
               key: "/admin/users?filter=expiring",
               icon: <ClockCircleOutlined />,
-              label: <Link href="/admin/users?filter=expiring">Expiring Users</Link>,
+              label: <Link href="/admin/users?filter=expiring" onClick={() => setMobileMenuVisible(false)}>Expiring Users</Link>,
             },
             {
               key: "/admin/notifications",
               icon: <BellOutlined />,
-              label: <Link href="/admin/notifications">Notifications</Link>,
+              label: <Link href="/admin/notifications" onClick={() => setMobileMenuVisible(false)}>Notifications</Link>,
             },
             {
               key: "/admin/settings",
               icon: <SettingOutlined />,
-              label: <Link href="/admin/settings">App Settings</Link>,
+              label: <Link href="/admin/settings" onClick={() => setMobileMenuVisible(false)}>App Settings</Link>,
             },
           ]
         : [
             {
               key: "/dashboard",
               icon: <AppstoreOutlined />,
-              label: <Link href="/dashboard">Dashboard</Link>,
+              label: <Link href="/dashboard" onClick={() => setMobileMenuVisible(false)}>Dashboard</Link>,
             },
             {
               key: "/products",
               icon: <AlertOutlined />,
-              label: <Link href="/products">Inventory</Link>,
+              label: <Link href="/products" onClick={() => setMobileMenuVisible(false)}>Inventory</Link>,
             },
             {
               key: "/insights",
               icon: <ClockCircleOutlined />,
-              label: <Link href="/insights">Insights</Link>,
+              label: <Link href="/insights" onClick={() => setMobileMenuVisible(false)}>Insights</Link>,
             },
             {
               key: "/notifications",
               icon: <BellOutlined />,
-              label: <Link href="/notifications">Notifications</Link>,
+              label: <Link href="/notifications" onClick={() => setMobileMenuVisible(false)}>Notifications</Link>,
             },
             {
               key: "/settings",
               icon: <SettingOutlined />,
-              label: <Link href="/settings">Settings</Link>,
+              label: <Link href="/settings" onClick={() => setMobileMenuVisible(false)}>Settings</Link>,
             },
           ],
     [isAdmin]
@@ -128,57 +131,80 @@ export default function AppShell({ children, user, appName }: AppShellProps) {
     },
   ];
 
+  const SidebarContent = (
+    <div className="flex h-full flex-col overflow-y-auto overflow-x-hidden">
+      <div className="flex items-center gap-3 p-6 overflow-hidden">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand text-lg font-bold text-white shadow-sm">
+          {appName[0]}
+        </div>
+        <div className="min-w-0">
+          <div className="text-sm font-black uppercase tracking-wider text-foreground truncate">
+            {appName}
+          </div>
+          <div className="text-[9px] font-bold uppercase tracking-[0.1em] text-muted opacity-80 truncate">
+            Powered by Nexorva
+          </div>
+        </div>
+      </div>
+
+      <Menu
+        mode="inline"
+        selectedKeys={[activeKey]}
+        items={items}
+        className="flex-1 mt-2"
+      />
+
+      <div className="p-6 mt-auto border-t border-border/60">
+        <Button
+          className="w-full justify-start gap-3 h-10 px-4 text-muted hover:text-brand transition-colors font-medium border-none shadow-none"
+          type="text"
+          icon={<LogoutOutlined />}
+          onClick={() => signOut({ callbackUrl: "/login" })}
+        >
+          Sign Out
+        </Button>
+      </div>
+    </div>
+  );
+
   return (
     <Layout className="h-screen overflow-hidden" hasSider>
+      {/* Desktop Sider */}
       <Sider
         width={260}
         theme="light"
         breakpoint="lg"
         collapsedWidth={0}
-        className="h-full border-r border-border z-30"
+        trigger={null}
+        className="h-full border-r border-border z-30 hidden lg:block"
       >
-        <div className="flex h-full flex-col w-[260px] overflow-y-auto overflow-x-hidden">
-          <div className="flex items-center gap-3 p-6 overflow-hidden">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand text-lg font-bold text-white shadow-sm">
-              {appName[0]}
-            </div>
-            <div className="min-w-0">
-              <div className="text-sm font-black uppercase tracking-wider text-foreground truncate">
-                {appName}
-              </div>
-              <div className="text-[9px] font-bold uppercase tracking-[0.1em] text-muted opacity-80 truncate">
-                Powered by Nexorva
-              </div>
-            </div>
-          </div>
-
-          <Menu
-            mode="inline"
-            selectedKeys={[activeKey]}
-            items={items}
-            className="flex-1 mt-2"
-          />
-
-          <div className="p-6 mt-auto border-t border-border/60">
-            <Button
-              className="w-full justify-start gap-3 h-10 px-4 text-muted hover:text-brand transition-colors font-medium border-none shadow-none"
-              type="text"
-              icon={<LogoutOutlined />}
-              onClick={() => signOut({ callbackUrl: "/login" })}
-            >
-              Sign Out
-            </Button>
-          </div>
-        </div>
+        {SidebarContent}
       </Sider>
 
-      <Layout className="h-full flex flex-col overflow-hidden">
-        <Header className="z-20 flex-shrink-0 flex justify-between items-center bg-surface px-10 border-b border-border shadow-none h-16">
-          <Typography.Text className="uppercase text-[11px] font-black tracking-[0.15em] text-muted/80 ml-2">
-            {isAdmin ? "Admin Control" : "Shop Terminal"}
-          </Typography.Text>
+      {/* Mobile Drawer */}
+      <Drawer
+        placement="left"
+        onClose={() => setMobileMenuVisible(false)}
+        open={mobileMenuVisible}
+        width={260}
+        styles={{ body: { padding: 0 } }}
+        closable={false}
+      >
+        {SidebarContent}
+      </Drawer>
 
+      <Layout className="h-full flex flex-col overflow-hidden">
+        <Header className="z-20 flex-shrink-0 flex justify-between items-center bg-surface px-4 lg:px-10 border-b border-border shadow-none h-16">
           <div className="flex items-center gap-4">
+            <Button
+              type="text"
+              icon={<MenuOutlined />}
+              onClick={() => setMobileMenuVisible(true)}
+              className="lg:hidden"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 lg:gap-4">
             <Button
               type="text"
               className="text-muted hover:text-brand flex items-center justify-center"
@@ -187,7 +213,7 @@ export default function AppShell({ children, user, appName }: AppShellProps) {
             />
             
             <Dropdown menu={{ items: menuItems }} placement="bottomRight" trigger={["click"]}>
-              <div className="flex items-center gap-2 cursor-pointer py-1 px-2 rounded-xl transition-all">
+              <div className="flex items-center gap-2 cursor-pointer py-1 px-1 lg:px-2 rounded-xl transition-all">
                 <div className="text-right hidden sm:block">
                   <div className="text-xs font-bold text-foreground leading-none mb-1">
                     {user.name ?? "User"}
@@ -205,13 +231,13 @@ export default function AppShell({ children, user, appName }: AppShellProps) {
                     {initials}
                   </Avatar>
                 </Badge>
-                <DownOutlined className="text-[10px] text-muted opacity-60" />
+                <DownOutlined className="text-[10px] text-muted opacity-60 hidden lg:block" />
               </div>
             </Dropdown>
           </div>
         </Header>
 
-        <Content className="flex-1 overflow-y-auto p-10 bg-background scroll-smooth">
+        <Content className="flex-1 overflow-y-auto p-4 lg:p-10 bg-background scroll-smooth">
           <div className="max-w-[1600px] mx-auto">
             {children}
           </div>

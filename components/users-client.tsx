@@ -14,6 +14,7 @@ import {
   Table,
   message,
 } from "antd";
+import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -396,19 +397,19 @@ export default function UsersClient() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-surface p-6 rounded-[24px] border border-border">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-surface p-5 lg:p-6 rounded-[24px] border border-border">
         <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight m-0">User Management</h1>
-          <p className="text-muted text-sm font-medium">Manage platform users and shop statuses.</p>
+          <h1 className="text-xl lg:text-2xl font-bold text-foreground tracking-tight m-0">User Management</h1>
+          <p className="text-muted text-xs lg:text-sm font-medium">Manage platform users and shop statuses.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <Input.Search
             allowClear
-            placeholder="Search shop, owner, email, code..."
+            placeholder="Search shop, owner, email..."
             value={searchValue}
             onChange={(event) => setSearchValue(event.target.value)}
             onSearch={setSearchFilter}
-            className="w-full sm:w-[300px]"
+            className="w-full lg:w-[300px]"
             size="large"
           />
           <div className="flex items-center gap-2">
@@ -416,24 +417,24 @@ export default function UsersClient() {
               onClick={fetchData} 
               loading={loading}
               size="large"
-              className="rounded-xl border-border hover:border-brand hover:text-brand"
+              className="flex-1 sm:flex-none rounded-xl border-border hover:border-brand hover:text-brand"
             >
               Refresh
-            </Button>
-            <Button 
-              onClick={exportCsv}
-              size="large"
-              className="rounded-xl border-border hover:border-brand hover:text-brand"
-            >
-              Export CSV
             </Button>
             <Button 
               type="primary" 
               onClick={() => openModal()}
               size="large"
-              className="rounded-xl bg-brand hover:bg-brand-strong border-none font-bold"
+              className="flex-1 sm:flex-none rounded-xl bg-brand hover:bg-brand-strong border-none font-bold"
             >
               Add User
+            </Button>
+            <Button 
+              onClick={exportCsv}
+              size="large"
+              className="hidden sm:block rounded-xl border-border hover:border-brand hover:text-brand"
+            >
+              Export
             </Button>
           </div>
         </div>
@@ -444,24 +445,25 @@ export default function UsersClient() {
         className="overflow-hidden rounded-[24px] border border-border bg-surface shadow-none"
       >
       {filter === "expiring" ? (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.25em] text-[color:var(--color-muted)]">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[color:var(--color-muted)]">
               Expiring filter
             </div>
-            <div className="text-sm text-[color:var(--color-muted)]">
+            <div className="text-xs lg:text-sm text-[color:var(--color-muted)]">
               Showing shops expiring within {expiringDays} days.
             </div>
           </div>
           <Segmented
             value={expiringDays}
             options={[
-              { label: "2 days", value: 2 },
-              { label: "7 days", value: 7 },
-              { label: "14 days", value: 14 },
-              { label: "30 days", value: 30 },
+              { label: "2d", value: 2 },
+              { label: "7d", value: 7 },
+              { label: "14d", value: 14 },
+              { label: "30d", value: 30 },
             ]}
             onChange={(value) => setExpiringFilter(value as number)}
+            className="w-fit"
           />
         </div>
       ) : null}
@@ -469,6 +471,7 @@ export default function UsersClient() {
         dataSource={filteredUsers}
         rowKey="id"
         loading={loading}
+        className="no-hover-table overflow-hidden"
         columns={[
           {
             title: "Shop",
@@ -486,7 +489,6 @@ export default function UsersClient() {
             ),
           },
           { title: "Owner", dataIndex: "name" },
-          { title: "Code", dataIndex: "userCode" },
           { title: "Status", dataIndex: "shopStatus" },
           {
             title: "Expiry",
@@ -515,7 +517,6 @@ export default function UsersClient() {
             title: "Actions",
             render: (_, record) => (
               <div className="flex gap-2">
-                <Button onClick={() => openModal(record)}>Edit</Button>
                 <Button onClick={() => sendReminder(record)}>
                   Send reminder
                 </Button>
@@ -531,11 +532,12 @@ export default function UsersClient() {
                     {record.shopStatus === "SUSPENDED" ? "Activate" : "Suspend"}
                   </Button>
                 </Popconfirm>
+                <Button icon={<EditOutlined />} onClick={() => openModal(record)} />
                 <Popconfirm
                   title="Delete user?"
                   onConfirm={() => onDelete(record.id)}
                 >
-                  <Button danger>Delete</Button>
+                  <Button danger icon={<DeleteOutlined />} />
                 </Popconfirm>
               </div>
             ),

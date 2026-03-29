@@ -452,7 +452,7 @@ export default function ProductsPage() {
       ) : null}
 
       <Card className="shadow-sm border border-black/5">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <Typography.Title level={4} className="!mb-1">
               Products
@@ -461,12 +461,13 @@ export default function ProductsPage() {
               Add new products, track stock, and share details fast.
             </Typography.Text>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="w-full sm:w-auto">
             <Button
               type="primary"
               size="large"
               onClick={() => setAddOpen(true)}
               disabled={!userCode || isFull}
+              className="w-full sm:w-auto"
             >
               Add Product
             </Button>
@@ -487,7 +488,7 @@ export default function ProductsPage() {
         title="Product List"
         className="shadow-sm border border-black/5"
         extra={
-          <div className="flex gap-2">
+          <div className="hidden sm:flex gap-2">
             <Button onClick={clearTableSortFilter} disabled={loading}>
               Clear Sort & Filters
             </Button>
@@ -497,12 +498,21 @@ export default function ProductsPage() {
           </div>
         }
       >
+        <div className="sm:hidden mb-4 flex gap-2">
+          <Button onClick={clearTableSortFilter} disabled={loading} className="flex-1">
+            Clear
+          </Button>
+          <Button onClick={fetchData} loading={loading} className="flex-1">
+            Refresh
+          </Button>
+        </div>
         <Table
           dataSource={filteredProducts}
           rowKey="id"
           loading={loading}
           pagination={{ pageSize: 20 }}
           onChange={handleTableChange}
+          scroll={{ x: 800 }}
           columns={[
             {
               title: "Product Code",

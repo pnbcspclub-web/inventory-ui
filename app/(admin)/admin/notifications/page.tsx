@@ -121,10 +121,10 @@ export default function AdminNotificationsPage() {
     <Card
       title="Notifications"
       extra={
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={() => fetchNotifications()}>Refresh</Button>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button onClick={() => fetchNotifications()} className="sm:inline-block">Refresh</Button>
           <Button type="primary" onClick={() => setComposeOpen(true)}>
-            Send notification
+            Send New
           </Button>
         </div>
       }
@@ -138,13 +138,15 @@ export default function AdminNotificationsPage() {
           dataSource={dataSource}
           loading={loading}
           pagination={{ pageSize: 8 }}
+          scroll={{ x: 800 }}
           columns={[
-            { title: "Target", dataIndex: "target" },
-            { title: "Title", dataIndex: "title" },
+            { title: "Target", dataIndex: "target", width: 150 },
+            { title: "Title", dataIndex: "title", width: 150 },
             { title: "Message", dataIndex: "message" },
-            { title: "Sent at", dataIndex: "sentAtLabel" },
+            { title: "Sent at", dataIndex: "sentAtLabel", width: 180 },
             {
               title: "Actions",
+              width: 100,
               render: (_, record) => (
                 <Popconfirm
                   title="Remove notification?"

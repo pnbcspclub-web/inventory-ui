@@ -77,6 +77,7 @@ export default function ShopkeeperNotificationsPage() {
           dataSource={dataSource}
           loading={loading}
           pagination={{ pageSize: 8 }}
+          scroll={{ x: 600 }}
           columns={[
             {
               title: "Message",
@@ -93,11 +94,6 @@ export default function ShopkeeperNotificationsPage() {
               ),
             },
             { title: "From", dataIndex: "senderLabel" },
-            {
-              title: "Channel",
-              dataIndex: "channel",
-              render: (value) => <Tag>{value}</Tag>,
-            },
             { title: "Sent at", dataIndex: "sentAtLabel" },
           ]}
         />

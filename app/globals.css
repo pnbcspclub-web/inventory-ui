@@ -28,6 +28,7 @@
 }
 
 @theme inline {
+  --breakpoint-lg: 992px;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
@@ -98,4 +99,9 @@ body {
 .ant-btn-primary {
   background: var(--brand) !important;
   box-shadow: none !important;
+}
+
+/* Disable hover on specific tables */
+.no-hover-table .ant-table-tbody > tr.ant-table-row:hover > td {
+  background: inherit !important;
 }
