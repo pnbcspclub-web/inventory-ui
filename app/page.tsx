@@ -483,10 +483,10 @@ export default async function Home() {
           </div>
           <p>© 2026 InventaGrow. All rights reserved.</p>
           <div className="flex items-center gap-5">
-            <Link href="/features" className="transition hover:text-[#17181f]">
+            <Link href="/privacy" className="transition hover:text-[#17181f]">
               Privacy
             </Link>
-            <Link href="/pricing" className="transition hover:text-[#17181f]">
+            <Link href="/terms" className="transition hover:text-[#17181f]">
               Terms
             </Link>
             <Link href="/demo-request" className="transition hover:text-[#17181f]">
