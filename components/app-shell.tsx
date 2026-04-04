@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
-import { Layout, Menu, Typography, Button, Dropdown, Badge, Avatar, Drawer } from "antd";
+import { useMemo, useState } from "react";
+import { Layout, Menu, Button, Dropdown, Badge, Avatar, Drawer } from "antd";
 import {
   AppstoreOutlined,
   TeamOutlined,
@@ -17,6 +17,7 @@ import {
   MenuOutlined,
 } from "@ant-design/icons";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useTheme } from "@/components/theme-provider";
@@ -132,16 +133,16 @@ export default function AppShell({ children, user, appName }: AppShellProps) {
   ];
 
   const SidebarContent = (
-    <div className="flex h-full flex-col overflow-y-auto overflow-x-hidden">
-      <div className="flex items-center gap-3 p-6 overflow-hidden">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand text-lg font-bold text-white shadow-sm">
-          {appName[0]}
+    <div className="invent-shell__sidebar flex h-full flex-col overflow-y-auto overflow-x-hidden">
+      <div className="flex items-center gap-3 overflow-hidden px-6 py-7">
+        <div className="invent-shell__logo shrink-0" aria-hidden="true">
+          <Image src="/vercel.svg" alt="" width={42} height={42} className="h-10 w-10 object-contain" />
         </div>
         <div className="min-w-0">
-          <div className="text-sm font-black uppercase tracking-wider text-foreground truncate">
+          <div className="truncate text-sm font-black uppercase tracking-[0.14em] text-foreground">
             {appName}
           </div>
-          <div className="text-[9px] font-bold uppercase tracking-[0.1em] text-muted opacity-80 truncate">
+          <div className="truncate text-[10px] font-bold uppercase tracking-[0.16em] text-muted opacity-80">
             Powered by Nexorva
           </div>
         </div>
@@ -151,12 +152,12 @@ export default function AppShell({ children, user, appName }: AppShellProps) {
         mode="inline"
         selectedKeys={[activeKey]}
         items={items}
-        className="flex-1 mt-2"
+        className="invent-shell__menu mt-2 flex-1"
       />
 
-      <div className="p-6 mt-auto border-t border-border/60">
+      <div className="mt-auto border-t border-border/60 p-6">
         <Button
-          className="w-full justify-start gap-3 h-10 px-4 text-muted hover:text-brand transition-colors font-medium border-none shadow-none"
+          className="h-11 w-full justify-start gap-3 rounded-2xl px-4 text-muted transition-colors font-medium border-none shadow-none"
           type="text"
           icon={<LogoutOutlined />}
           onClick={() => signOut({ callbackUrl: "/login" })}
@@ -172,11 +173,12 @@ export default function AppShell({ children, user, appName }: AppShellProps) {
       {/* Desktop Sider */}
       <Sider
         width={260}
-        theme="light"
+        theme={themeMode === "dark" ? "dark" : "light"}
         breakpoint="lg"
         collapsedWidth={0}
         trigger={null}
-        className="h-full border-r border-border z-30 hidden lg:block"
+        className="hidden h-full border-r border-border z-30 lg:block"
+        style={{ background: "var(--surface)" }}
       >
         {SidebarContent}
       </Sider>
@@ -188,57 +190,61 @@ export default function AppShell({ children, user, appName }: AppShellProps) {
         open={mobileMenuVisible}
         width={260}
         styles={{ body: { padding: 0 } }}
+        style={{ background: "var(--surface)" }}
         closable={false}
       >
         {SidebarContent}
       </Drawer>
 
       <Layout className="h-full flex flex-col overflow-hidden">
-        <Header className="z-20 flex-shrink-0 flex justify-between items-center bg-surface px-4 lg:px-10 border-b border-border shadow-none h-16">
+        <Header
+          className="flex h-18 flex-shrink-0 items-center justify-between border-b border-border px-4 shadow-none lg:px-10"
+          style={{ background: "var(--surface)", lineHeight: 1 }}
+        >
           <div className="flex items-center gap-4">
             <Button
               type="text"
               icon={<MenuOutlined />}
               onClick={() => setMobileMenuVisible(true)}
-              className="lg:hidden"
+              className="h-11 w-11 rounded-2xl text-muted lg:hidden"
             />
           </div>
 
           <div className="flex items-center gap-2 lg:gap-4">
             <Button
               type="text"
-              className="text-muted hover:text-brand flex items-center justify-center"
+              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-surface text-muted hover:text-brand"
               icon={themeMode === "dark" ? <SunOutlined /> : <MoonOutlined />}
               onClick={toggle}
             />
             
             <Dropdown menu={{ items: menuItems }} placement="bottomRight" trigger={["click"]}>
-              <div className="flex items-center gap-2 cursor-pointer py-1 px-1 lg:px-2 rounded-xl transition-all">
-                <div className="text-right hidden sm:block">
-                  <div className="text-xs font-bold text-foreground leading-none mb-1">
+              <div className="flex cursor-pointer items-center gap-3 rounded-2xl border border-transparent px-1 py-1 transition-all hover:border-border hover:bg-surface-muted/80 lg:px-2">
+                <div className="hidden text-right sm:block">
+                  <div className="mb-1 text-xs font-bold leading-none text-foreground">
                     {user.name ?? "User"}
                   </div>
-                  <div className="text-[10px] text-accent font-bold uppercase tracking-tight leading-none">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.18em] leading-none text-accent">
                     Online
                   </div>
                 </div>
                 
                 <Badge dot color="#22c55e" offset={[-3, 31]} size="small">
                   <Avatar 
-                    className="bg-brand-soft text-brand font-bold border border-brand/10 shadow-sm" 
+                    className="border border-brand/10 bg-brand-soft font-bold text-brand shadow-sm" 
                     size={36}
                   >
                     {initials}
                   </Avatar>
                 </Badge>
-                <DownOutlined className="text-[10px] text-muted opacity-60 hidden lg:block" />
+                <DownOutlined className="hidden text-[10px] text-muted opacity-60 lg:block" />
               </div>
             </Dropdown>
           </div>
         </Header>
 
-        <Content className="flex-1 overflow-y-auto p-4 lg:p-10 bg-background scroll-smooth">
-          <div className="max-w-[1600px] mx-auto">
+        <Content className="flex-1 overflow-y-auto bg-background p-4 scroll-smooth lg:p-8 xl:p-10">
+          <div className="mx-auto max-w-[1540px]">
             {children}
           </div>
         </Content>

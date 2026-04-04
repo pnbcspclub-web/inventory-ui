@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { Button, Card, Col, List, Row, Tag } from "antd";
 import Link from "next/link";
 
-import { 
+import {
   Package, 
   Database, 
   IndianRupee, 
@@ -18,6 +18,8 @@ import {
   Settings,
   ArrowUpRight
 } from "lucide-react";
+
+const formatCurrency = (value: number) => `₹${value.toLocaleString("en-IN")}`;
 
 export default function DashboardPage() {
   const { data: session } = useSession();
@@ -191,7 +193,9 @@ export default function DashboardPage() {
                   <span className="text-muted font-bold uppercase tracking-wider text-[10px] lg:text-[11px]">Today Sales</span>
                 </div>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-3xl lg:text-4xl font-black text-foreground tracking-tight">₹{todaySalesAll.toLocaleString('en-IN')}</span>
+                  <span className="text-3xl lg:text-4xl font-black text-foreground tracking-tight">
+                    {formatCurrency(todaySalesAll)}
+                  </span>
                 </div>
                 <div className="mt-3 text-muted font-bold text-[10px] lg:text-xs">
                   Aggregate sales today
@@ -271,7 +275,7 @@ export default function DashboardPage() {
                             {item.shopName ?? "Shop"}
                           </div>
                           <div className="text-[10px] lg:text-[11px] text-muted font-bold uppercase truncate">
-                            Owner: {item.name ?? "Unknown"} • {item.phone ?? "No phone"}
+                            Owner: {item.name ?? "Unknown"} | {item.phone ?? "No phone"}
                           </div>
                         </div>
                         <Tag color="rgba(225, 29, 72, 0.1)" className="border-none rounded-full px-2 lg:px-3 py-0.5 font-bold text-[9px] lg:text-[10px] text-rose-600 shrink-0">
@@ -288,7 +292,7 @@ export default function DashboardPage() {
       ) : (
         <>
           {/* Shopkeeper Header */}
-          <div className="bg-surface rounded-[24px] lg:rounded-[32px] p-5 lg:p-8 border border-border flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+          <div className="bg-surface rounded-[24px] lg:rounded-[32px] p-5 lg:p-8 border border-border flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden shadow-[0_20px_60px_rgba(15,23,42,0.04)]">
             <div className="absolute -right-20 top-6 h-56 w-56 rounded-full bg-brand/5 blur-3xl" />
             <div className="relative z-10">
               <div className="flex items-center gap-2 mb-1">
@@ -370,7 +374,9 @@ export default function DashboardPage() {
                   <span className="text-muted font-bold uppercase tracking-wider text-[10px] lg:text-[11px]">Daily Sales</span>
                 </div>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-3xl lg:text-4xl font-black text-foreground tracking-tight">₹{loading ? "--" : salesToday.toLocaleString('en-IN')}</span>
+                  <span className="text-3xl lg:text-4xl font-black text-foreground tracking-tight">
+                    {loading ? "₹--" : formatCurrency(salesToday)}
+                  </span>
                 </div>
                 <div className="mt-3 text-accent font-bold text-[10px] lg:text-xs flex items-center gap-1">
                   <ArrowUpRight className="w-3 h-3" />
@@ -388,7 +394,9 @@ export default function DashboardPage() {
                   <span className="text-muted font-bold uppercase tracking-wider text-[10px] lg:text-[11px]">Monthly Revenue</span>
                 </div>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-3xl lg:text-4xl font-black text-foreground tracking-tight">₹{loading ? "--" : salesMonth.toLocaleString('en-IN')}</span>
+                  <span className="text-3xl lg:text-4xl font-black text-foreground tracking-tight">
+                    {loading ? "₹--" : formatCurrency(salesMonth)}
+                  </span>
                 </div>
                 <div className="mt-3 text-muted font-bold text-[10px] lg:text-xs">
                   Current month aggregate
@@ -424,7 +432,7 @@ export default function DashboardPage() {
                               {product.sku}
                             </span>
                             <span className="font-medium truncate">{product.name}</span>
-                            <span className="font-bold text-foreground">₹{Number(product.price).toLocaleString("en-IN")}</span>
+                            <span className="font-bold text-foreground">{formatCurrency(Number(product.price))}</span>
                             <span className={`font-bold ${product.quantity <= 5 ? 'text-rose-500' : 'text-foreground'}`}>
                               {product.quantity}
                             </span>

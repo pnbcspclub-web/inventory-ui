@@ -18,6 +18,7 @@ import {
   Typography,
   message,
 } from "antd";
+import { CheckOutlined } from "@ant-design/icons";
 import type { TableProps } from "antd";
 
 type ProductStatus = "ACTIVE" | "INACTIVE" | "SOLD";
@@ -49,6 +50,9 @@ const STATUS_COLOR: Record<ProductStatus, string> = {
   INACTIVE: "gold",
   SOLD: "red",
 };
+
+const productCardClass =
+  "rounded-[24px] border border-border bg-surface shadow-none";
 
 export default function ProductsPage() {
   const { data: session } = useSession();
@@ -451,7 +455,7 @@ export default function ProductsPage() {
         />
       ) : null}
 
-      <Card className="shadow-sm border border-black/5">
+      <Card className={productCardClass}>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <Typography.Title level={4} className="!mb-1">
@@ -486,7 +490,8 @@ export default function ProductsPage() {
 
       <Card
         title="Product List"
-        className="shadow-sm border border-black/5"
+        className={productCardClass}
+        bodyStyle={{ paddingTop: 18 }}
         extra={
           <div className="hidden sm:flex gap-2">
             <Button onClick={clearTableSortFilter} disabled={loading}>
@@ -507,6 +512,7 @@ export default function ProductsPage() {
           </Button>
         </div>
         <Table
+          className="invent-table"
           dataSource={filteredProducts}
           rowKey="id"
           loading={loading}
@@ -593,8 +599,14 @@ export default function ProductsPage() {
                 <div className="flex flex-wrap gap-2">
                   <Button onClick={() => openEdit(record)}>Edit</Button>
                   <Button onClick={() => openSell(record)}>Sell</Button>
-                  <Button onClick={() => copyWhatsapp(record)}>
-                    WhatsApp Copy
+                  <Button
+                    onClick={() => copyWhatsapp(record)}
+                    className="flex h-auto items-center gap-2 rounded-xl border-border bg-surface px-3 py-1.5 text-foreground shadow-none transition-all hover:border-brand/40 hover:bg-surface-muted"
+                  >
+                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#25D366]">
+                      <CheckOutlined className="text-[10px] text-white" />
+                    </div>
+                    <span className="font-medium text-foreground">WhatsApp</span>
                   </Button>
                   <Popconfirm
                     title="Delete product?"

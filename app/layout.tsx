@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, Manrope } from "next/font/google";
-import "./globals.css";
 import "antd/dist/reset.css";
+import "./globals.css";
 import Providers from "./providers";
 import { APP_DESCRIPTION, APP_NAME } from "@/lib/app-config";
 
