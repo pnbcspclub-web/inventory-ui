@@ -21,10 +21,13 @@ export function isShopAccessBlocked(session: Session) {
   }
 
   if (!session.user.shopExpiry) {
-    return false;
+    return Boolean(session.user.mustChangePassword);
   }
 
-  return new Date(session.user.shopExpiry) < new Date();
+  return (
+    new Date(session.user.shopExpiry) < new Date() ||
+    Boolean(session.user.mustChangePassword)
+  );
 }
 
 export function guardActiveShopkeeper(session: Session | null) {

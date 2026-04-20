@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Layout, Menu, Button, Dropdown, Badge, Avatar, Drawer } from "antd";
 import {
   AppstoreOutlined,
@@ -18,7 +18,7 @@ import {
 } from "@ant-design/icons";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useTheme } from "@/components/theme-provider";
 
@@ -31,18 +31,27 @@ type AppShellProps = {
     name?: string | null;
     email?: string | null;
     role?: string | null;
+    mustChangePassword?: boolean;
   };
   appName: string;
 };
 
 export default function AppShell({ children, user, appName }: AppShellProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const isAdmin = user.role === "ADMIN";
+  const requiresPasswordChange = !isAdmin && Boolean(user.mustChangePassword);
   const { mode: themeMode, toggle } = useTheme();
   const mode = searchParams.get("mode");
   const filter = searchParams.get("filter");
   const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
+
+  useEffect(() => {
+    if (requiresPasswordChange && pathname !== "/settings") {
+      router.replace("/settings");
+    }
+  }, [pathname, requiresPasswordChange, router]);
 
   const activeKey = useMemo(() => {
     if (!isAdmin) return pathname;
@@ -87,7 +96,15 @@ export default function AppShell({ children, user, appName }: AppShellProps) {
               label: <Link href="/admin/settings" onClick={() => setMobileMenuVisible(false)}>App Settings</Link>,
             },
           ]
-        : [
+        : requiresPasswordChange
+          ? [
+              {
+                key: "/settings",
+                icon: <SettingOutlined />,
+                label: <Link href="/settings" onClick={() => setMobileMenuVisible(false)}>Settings</Link>,
+              },
+            ]
+          : [
             {
               key: "/dashboard",
               icon: <AppstoreOutlined />,
@@ -114,7 +131,7 @@ export default function AppShell({ children, user, appName }: AppShellProps) {
               label: <Link href="/settings" onClick={() => setMobileMenuVisible(false)}>Settings</Link>,
             },
           ],
-    [isAdmin]
+    [isAdmin, requiresPasswordChange]
   );
 
   const initials = (user.name ?? user.email ?? "U")

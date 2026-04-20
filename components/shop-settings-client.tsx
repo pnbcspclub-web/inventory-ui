@@ -1,6 +1,7 @@
 "use client";
 
 import { Button, Card, Descriptions, Form, Input, message } from "antd";
+import { useRouter } from "next/navigation";
 
 type ShopSettingsClientProps = {
   user: {
@@ -9,11 +10,14 @@ type ShopSettingsClientProps = {
     shopName?: string | null;
     phone?: string | null;
     address?: string | null;
+    mustChangePassword?: boolean;
   };
 };
 
 export default function ShopSettingsClient({ user }: ShopSettingsClientProps) {
   const [passwordForm] = Form.useForm();
+  const router = useRouter();
+  const requiresPasswordChange = Boolean(user.mustChangePassword);
 
   const changePassword = async (values: {
     currentPassword: string;
@@ -32,6 +36,10 @@ export default function ShopSettingsClient({ user }: ShopSettingsClientProps) {
     if (res.ok) {
       message.success("Password updated");
       passwordForm.resetFields();
+      if (requiresPasswordChange) {
+        router.replace("/dashboard");
+        router.refresh();
+      }
       return;
     }
 
@@ -46,8 +54,9 @@ export default function ShopSettingsClient({ user }: ShopSettingsClientProps) {
           Settings
         </h1>
         <p className="text-sm text-[color:var(--muted)]">
-          Review your shop profile details. Contact your admin to update these
-          fields.
+          {requiresPasswordChange
+            ? "You must set a new password before you can use the rest of the app."
+            : "Review your shop profile details. Contact your admin to update these fields."}
         </p>
       </div>
 
@@ -65,15 +74,20 @@ export default function ShopSettingsClient({ user }: ShopSettingsClientProps) {
         />
       </Card>
 
-      <Card title="Change Password" className="border border-black/5 shadow-sm">
+      <Card
+        title={requiresPasswordChange ? "Set Your New Password" : "Change Password"}
+        className="border border-black/5 shadow-sm"
+      >
         <Form layout="vertical" form={passwordForm} onFinish={changePassword}>
-          <Form.Item
-            label="Current Password"
-            name="currentPassword"
-            rules={[{ required: true, message: "Enter your current password" }]}
-          >
-            <Input.Password placeholder="Enter current password" />
-          </Form.Item>
+          {requiresPasswordChange ? null : (
+            <Form.Item
+              label="Current Password"
+              name="currentPassword"
+              rules={[{ required: true, message: "Enter your current password" }]}
+            >
+              <Input.Password placeholder="Enter current password" />
+            </Form.Item>
+          )}
           <Form.Item
             label="New Password"
             name="newPassword"
@@ -103,7 +117,7 @@ export default function ShopSettingsClient({ user }: ShopSettingsClientProps) {
             <Input.Password placeholder="Re-enter new password" />
           </Form.Item>
           <Button type="primary" htmlType="submit">
-            Update Password
+            {requiresPasswordChange ? "Save New Password" : "Update Password"}
           </Button>
         </Form>
       </Card>

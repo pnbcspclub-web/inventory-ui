@@ -14,6 +14,7 @@ const defaultUserSelect = {
   shopExpiry: true,
   address: true,
   phone: true,
+  mustChangePassword: true,
   createdAt: true,
 } as const;
 
@@ -68,6 +69,7 @@ export async function POST(req: Request) {
       address: body.address ?? null,
       phone: body.phone ?? null,
       passwordHash,
+      mustChangePassword: true,
     },
     select: {
       id: true,
@@ -80,6 +82,7 @@ export async function POST(req: Request) {
       shopExpiry: true,
       address: true,
       phone: true,
+      mustChangePassword: true,
       createdAt: true,
     },
   });

@@ -21,6 +21,7 @@ export default async function SettingsPage() {
         shopName: session.user.shopName ?? null,
         phone: session.user.phone ?? null,
         address: session.user.address ?? null,
+        mustChangePassword: session.user.mustChangePassword ?? false,
       }}
     />
   );

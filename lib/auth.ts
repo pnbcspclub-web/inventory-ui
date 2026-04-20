@@ -48,6 +48,7 @@ export const authOptions: NextAuthOptions = {
           shopName: user.shopName,
           shopStatus: user.shopStatus,
           shopExpiry: user.shopExpiry ? user.shopExpiry.toISOString() : null,
+          mustChangePassword: user.mustChangePassword,
         };
       },
     }),
@@ -65,6 +66,8 @@ export const authOptions: NextAuthOptions = {
         token.shopStatus = (user as { shopStatus?: "ACTIVE" | "SUSPENDED" })
           .shopStatus;
         token.shopExpiry = (user as { shopExpiry?: string | null }).shopExpiry ?? null;
+        token.mustChangePassword = (user as { mustChangePassword?: boolean })
+          .mustChangePassword ?? false;
       }
 
       if (token.uid) {
@@ -78,6 +81,7 @@ export const authOptions: NextAuthOptions = {
             shopName: true,
             shopStatus: true,
             shopExpiry: true,
+            mustChangePassword: true,
           },
         });
 
@@ -91,6 +95,7 @@ export const authOptions: NextAuthOptions = {
           token.shopExpiry = currentUser.shopExpiry
             ? currentUser.shopExpiry.toISOString()
             : null;
+          token.mustChangePassword = currentUser.mustChangePassword;
         }
       }
 
@@ -106,6 +111,7 @@ export const authOptions: NextAuthOptions = {
         session.user.shopName = token.shopName as string | null;
         session.user.shopStatus = token.shopStatus as "ACTIVE" | "SUSPENDED";
         session.user.shopExpiry = token.shopExpiry as string | null;
+        session.user.mustChangePassword = Boolean(token.mustChangePassword);
       }
       return session;
     },

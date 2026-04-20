@@ -26,6 +26,8 @@ export async function PUT(req: Request, { params }: Params) {
       address: body.address ?? undefined,
       phone: body.phone ?? undefined,
       passwordHash: nextPasswordHash,
+      mustChangePassword:
+        body.password ? true : body.mustChangePassword ?? undefined,
     },
     select: {
       id: true,
@@ -38,6 +40,7 @@ export async function PUT(req: Request, { params }: Params) {
       shopExpiry: true,
       address: true,
       phone: true,
+      mustChangePassword: true,
       createdAt: true,
     },
   });

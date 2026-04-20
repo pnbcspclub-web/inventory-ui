@@ -27,7 +27,13 @@ export default async function AppLayout({
   }
 
   return (
-    <AppShell user={session.user} appName={settings.appName}>
+    <AppShell
+      user={{
+        ...session.user,
+        mustChangePassword: session.user.mustChangePassword ?? false,
+      }}
+      appName={settings.appName}
+    >
       {children}
     </AppShell>
   );

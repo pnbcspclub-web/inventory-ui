@@ -11,6 +11,7 @@ declare module "next-auth" {
       shopName?: string | null;
       shopStatus?: "ACTIVE" | "SUSPENDED";
       shopExpiry?: string | null;
+      mustChangePassword?: boolean;
       name?: string | null;
       email?: string | null;
     };
@@ -27,5 +28,6 @@ declare module "next-auth/jwt" {
     shopName?: string | null;
     shopStatus?: "ACTIVE" | "SUSPENDED";
     shopExpiry?: string | null;
+    mustChangePassword?: boolean;
   }
 }
