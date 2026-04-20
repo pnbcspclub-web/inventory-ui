@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, Descriptions } from "antd";
+import { Button, Card, Descriptions, Form, Input, message } from "antd";
 
 type ShopSettingsClientProps = {
   user: {
@@ -13,6 +13,32 @@ type ShopSettingsClientProps = {
 };
 
 export default function ShopSettingsClient({ user }: ShopSettingsClientProps) {
+  const [passwordForm] = Form.useForm();
+
+  const changePassword = async (values: {
+    currentPassword: string;
+    newPassword: string;
+    confirmPassword: string;
+  }) => {
+    const res = await fetch("/api/shopkeeper/password", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        currentPassword: values.currentPassword,
+        newPassword: values.newPassword,
+      }),
+    });
+
+    if (res.ok) {
+      message.success("Password updated");
+      passwordForm.resetFields();
+      return;
+    }
+
+    const data = await res.json();
+    message.error(data.error ?? "Unable to update password");
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -37,6 +63,49 @@ export default function ShopSettingsClient({ user }: ShopSettingsClientProps) {
             { key: "address", label: "Address", children: user.address ?? "--" },
           ]}
         />
+      </Card>
+
+      <Card title="Change Password" className="border border-black/5 shadow-sm">
+        <Form layout="vertical" form={passwordForm} onFinish={changePassword}>
+          <Form.Item
+            label="Current Password"
+            name="currentPassword"
+            rules={[{ required: true, message: "Enter your current password" }]}
+          >
+            <Input.Password placeholder="Enter current password" />
+          </Form.Item>
+          <Form.Item
+            label="New Password"
+            name="newPassword"
+            rules={[
+              { required: true, message: "Enter a new password" },
+              { min: 6, message: "Password must be at least 6 characters" },
+            ]}
+          >
+            <Input.Password placeholder="Enter new password" />
+          </Form.Item>
+          <Form.Item
+            label="Confirm New Password"
+            name="confirmPassword"
+            dependencies={["newPassword"]}
+            rules={[
+              { required: true, message: "Confirm your new password" },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue("newPassword") === value) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(new Error("Passwords do not match"));
+                },
+              }),
+            ]}
+          >
+            <Input.Password placeholder="Re-enter new password" />
+          </Form.Item>
+          <Button type="primary" htmlType="submit">
+            Update Password
+          </Button>
+        </Form>
       </Card>
     </div>
   );

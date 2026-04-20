@@ -10,6 +10,13 @@ const saleSelect = {
   createdAt: true,
 } as const;
 
+type ProductSalesInsight = {
+  productId: string;
+  name: string;
+  code: string;
+  quantity: number;
+};
+
 export async function GET(req: Request) {
   const session = await auth();
   if (!session) {
@@ -37,7 +44,7 @@ export async function GET(req: Request) {
     sevenDaysAgo.setHours(0, 0, 0, 0);
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
 
-    const [totals, recentSales] = await Promise.all([
+    const [totals, recentSales, groupedProductSales] = await Promise.all([
       prisma.sale.aggregate({
         where: baseWhere,
         _count: { _all: true },
@@ -51,6 +58,11 @@ export async function GET(req: Request) {
         },
         orderBy: { createdAt: "asc" },
         select: saleSelect,
+      }),
+      prisma.sale.groupBy({
+        by: ["productId"],
+        where: baseWhere,
+        _sum: { quantity: true },
       }),
     ]);
 
@@ -68,12 +80,51 @@ export async function GET(req: Request) {
       dailyTotals.set(key, (dailyTotals.get(key) ?? 0) + Number(sale.total));
     });
 
+    const productIds = groupedProductSales.map((item) => item.productId);
+    const products =
+      productIds.length > 0
+        ? await prisma.product.findMany({
+            where: { id: { in: productIds } },
+            select: { id: true, name: true, sku: true },
+          })
+        : [];
+
+    const productMap = new Map(
+      products.map((product) => [
+        product.id,
+        { name: product.name, code: product.sku },
+      ])
+    );
+    const rankedProducts: ProductSalesInsight[] = groupedProductSales
+      .map((item) => ({
+        productId: item.productId,
+        name: productMap.get(item.productId)?.name ?? "Unknown Product",
+        code: productMap.get(item.productId)?.code ?? "N/A",
+        quantity: Number(item._sum.quantity ?? 0),
+      }))
+      .filter((item) => item.quantity > 0)
+      .sort((a, b) => {
+        if (b.quantity !== a.quantity) return b.quantity - a.quantity;
+        return a.name.localeCompare(b.name);
+      });
+
+    const mostSoldProduct = rankedProducts[0] ?? null;
+    const leastSoldProduct =
+      rankedProducts.length > 0
+        ? [...rankedProducts].sort((a, b) => {
+            if (a.quantity !== b.quantity) return a.quantity - b.quantity;
+            return a.name.localeCompare(b.name);
+          })[0]
+        : null;
+
     return NextResponse.json({
       count: totals._count._all,
       total: Number(totals._sum.total ?? 0),
       units: Number(totals._sum.quantity ?? 0),
       average: Number(totals._avg.total ?? 0),
       last7Days: Array.from(dailyTotals, ([date, total]) => ({ date, total })),
+      mostSoldProduct,
+      leastSoldProduct,
     });
   }
 

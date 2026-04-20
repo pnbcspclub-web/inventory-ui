@@ -323,6 +323,15 @@ export default function DashboardPage() {
                   Analytics
                 </Button>
               </Link>
+              <Link href="/settings" className="flex-1 md:flex-none">
+                <Button
+                  icon={<Settings className="w-4 h-4" />}
+                  size="large"
+                  className="h-10 lg:h-12 w-full px-4 lg:px-6 rounded-xl lg:rounded-2xl font-bold border-border hover:border-gray-300 hover:bg-surface-muted flex items-center justify-center gap-2"
+                >
+                  Password
+                </Button>
+              </Link>
             </div>
           </div>
 

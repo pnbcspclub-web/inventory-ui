@@ -5,12 +5,21 @@ import { useSession } from "next-auth/react";
 import { Card, Col, Row, Statistic } from "antd";
 
 type DailyBucket = { date: string; total: number };
+type ProductSalesInsight = {
+  productId: string;
+  name: string;
+  code: string;
+  quantity: number;
+} | null;
+
 type SalesSummary = {
   count: number;
   total: number;
   units: number;
   average: number;
   last7Days: DailyBucket[];
+  mostSoldProduct: ProductSalesInsight;
+  leastSoldProduct: ProductSalesInsight;
 };
 
 const rupee = String.fromCharCode(0x20b9);
@@ -26,6 +35,8 @@ export default function InsightsPage() {
     units: 0,
     average: 0,
     last7Days: [],
+    mostSoldProduct: null,
+    leastSoldProduct: null,
   });
   const [loading, setLoading] = useState(true);
 
@@ -52,6 +63,8 @@ export default function InsightsPage() {
         units: summary.units,
       },
       average: summary.average,
+      mostSoldProduct: summary.mostSoldProduct,
+      leastSoldProduct: summary.leastSoldProduct,
     };
   }, [summary]);
 
@@ -91,6 +104,59 @@ export default function InsightsPage() {
         <Col xs={24} sm={12} lg={6}>
           <Card loading={loading} className="border border-black/5 shadow-sm">
             <Statistic title="Avg Sale Value" value={formatMoney(stats.average)} />
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]}>
+        <Col xs={24} md={12}>
+          <Card
+            loading={loading}
+            title="Most Sold Product"
+            className="border border-black/5 shadow-sm"
+          >
+            {stats.mostSoldProduct ? (
+              <div className="space-y-1">
+                <div className="text-base font-semibold text-[color:var(--foreground)]">
+                  {stats.mostSoldProduct.name}
+                </div>
+                <div className="text-sm text-[color:var(--muted)]">
+                  Product code: {stats.mostSoldProduct.code}
+                </div>
+                <div className="text-sm text-[color:var(--muted)]">
+                  Quantity sold: {stats.mostSoldProduct.quantity}
+                </div>
+              </div>
+            ) : (
+              <div className="text-sm text-[color:var(--muted)]">
+                No sales recorded yet.
+              </div>
+            )}
+          </Card>
+        </Col>
+        <Col xs={24} md={12}>
+          <Card
+            loading={loading}
+            title="Least Sold Product"
+            className="border border-black/5 shadow-sm"
+          >
+            {stats.leastSoldProduct ? (
+              <div className="space-y-1">
+                <div className="text-base font-semibold text-[color:var(--foreground)]">
+                  {stats.leastSoldProduct.name}
+                </div>
+                <div className="text-sm text-[color:var(--muted)]">
+                  Product code: {stats.leastSoldProduct.code}
+                </div>
+                <div className="text-sm text-[color:var(--muted)]">
+                  Quantity sold: {stats.leastSoldProduct.quantity}
+                </div>
+              </div>
+            ) : (
+              <div className="text-sm text-[color:var(--muted)]">
+                No sales recorded yet.
+              </div>
+            )}
           </Card>
         </Col>
       </Row>

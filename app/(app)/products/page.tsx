@@ -15,10 +15,11 @@ import {
   Select,
   Table,
   Tag,
+  Tooltip,
   Typography,
   message,
 } from "antd";
-import { CheckOutlined } from "@ant-design/icons";
+import { CheckOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import type { TableProps } from "antd";
 
 type ProductStatus = "ACTIVE" | "INACTIVE" | "SOLD";
@@ -405,12 +406,9 @@ export default function ProductsPage() {
     const messageText = `✨ *${product.name}* ✨
   
   🆔 *Product Code:* ${product.sku}
-  
   📝 *Details:*
   ${product.description ?? "-"}
-  
   💰 *Price:* ${rupee}${Number(product.price).toLocaleString("en-IN")}
-  
   📦 *Stock:* ${product.quantity > 0 ? "✅ Available" : "❌ Sold Out"}
   
   👉 *Reply "YES" to Buy*
@@ -597,7 +595,13 @@ export default function ProductsPage() {
               title: "Action",
               render: (_, record) => (
                 <div className="flex flex-wrap gap-2">
-                  <Button onClick={() => openEdit(record)}>Edit</Button>
+                  <Tooltip title="Edit">
+                    <Button
+                      aria-label="Edit product"
+                      icon={<EditOutlined />}
+                      onClick={() => openEdit(record)}
+                    />
+                  </Tooltip>
                   <Button onClick={() => openSell(record)}>Sell</Button>
                   <Button
                     onClick={() => copyWhatsapp(record)}
@@ -615,7 +619,13 @@ export default function ProductsPage() {
                     okText="Yes"
                     cancelText="No"
                   >
-                    <Button danger>Delete</Button>
+                    <Tooltip title="Delete">
+                      <Button
+                        danger
+                        aria-label="Delete product"
+                        icon={<DeleteOutlined />}
+                      />
+                    </Tooltip>
                   </Popconfirm>
                 </div>
               ),
