@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { requireActiveShopkeeper } from "@/lib/session-guards";
+import { getTenantOwnerId } from "@/lib/tenant";
 
 const productSelect = {
   id: true,
@@ -23,8 +24,9 @@ export async function GET() {
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const ownerId = getTenantOwnerId(session.user);
   const products = await prisma.product.findMany({
-    where: { ownerId: session.user.id },
+    where: { ownerId },
     orderBy: { serialNumber: "asc" },
     select: productSelect,
   });
@@ -39,6 +41,7 @@ export async function POST(req: Request) {
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const ownerId = getTenantOwnerId(session.user);
   const body = await req.json();
   if (!session.user.userCode) {
     return NextResponse.json({ error: "User code not set" }, { status: 400 });
@@ -47,7 +50,7 @@ export async function POST(req: Request) {
   try {
     const product = await prisma.$transaction(async (tx) => {
       const stats = await tx.product.aggregate({
-        where: { ownerId: session.user.id },
+        where: { ownerId },
         _count: { _all: true },
         _max: { serialNumber: true },
       });
@@ -70,7 +73,7 @@ export async function POST(req: Request) {
           quantity,
           status,
           reorderLevel: 0,
-          ownerId: session.user.id,
+          ownerId,
           serialNumber,
         },
         select: productSelect,

@@ -2,21 +2,18 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { assignCodeToUser, serializeUserWithCodes } from "@/lib/user-codes";
 
-const defaultUserSelect = {
-  id: true,
-  name: true,
-  email: true,
-  role: true,
-  userCode: true,
-  shopName: true,
-  shopStatus: true,
-  shopExpiry: true,
-  address: true,
-  phone: true,
-  mustChangePassword: true,
-  createdAt: true,
-} as const;
+const defaultUserInclude = {
+  primaryCode: { select: { id: true, value: true } },
+  codeAssignments: {
+    orderBy: [{ assignedAt: "asc" as const }],
+    select: {
+      assignedAt: true,
+      code: { select: { id: true, value: true } },
+    },
+  },
+};
 
 const pickerUserSelect = {
   id: true,
@@ -38,13 +35,23 @@ export async function GET(req: Request) {
       ? Math.min(requestedTake, 500)
       : undefined;
 
+  if (view === "picker") {
+    const users = await prisma.user.findMany({
+      where: { role: "SHOPKEEPER" },
+      orderBy: { createdAt: "desc" },
+      take,
+      select: pickerUserSelect,
+    });
+    return NextResponse.json(users);
+  }
+
   const users = await prisma.user.findMany({
     where: { role: "SHOPKEEPER" },
     orderBy: { createdAt: "desc" },
     take,
-    select: view === "picker" ? pickerUserSelect : defaultUserSelect,
+    include: defaultUserInclude,
   });
-  return NextResponse.json(users);
+  return NextResponse.json(users.map((user) => serializeUserWithCodes(user)));
 }
 
 export async function POST(req: Request) {
@@ -57,12 +64,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Email and password required" }, { status: 400 });
   }
   const passwordHash = await bcrypt.hash(body.password, 10);
-  const user = await prisma.user.create({
+  const createdUser = await prisma.user.create({
     data: {
       name: body.name ?? null,
       email: body.email.toLowerCase(),
       role: "SHOPKEEPER",
-      userCode: body.userCode ?? null,
       shopName: body.shopName ?? null,
       shopStatus: body.shopStatus ?? "ACTIVE",
       shopExpiry: body.shopExpiry ? new Date(body.shopExpiry) : null,
@@ -71,20 +77,32 @@ export async function POST(req: Request) {
       passwordHash,
       mustChangePassword: true,
     },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      userCode: true,
-      shopName: true,
-      shopStatus: true,
-      shopExpiry: true,
-      address: true,
-      phone: true,
-      mustChangePassword: true,
-      createdAt: true,
-    },
+    include: defaultUserInclude,
   });
-  return NextResponse.json(user, { status: 201 });
+
+  const rawCodes = Array.isArray(body.userCodes)
+    ? body.userCodes
+    : body.userCode
+      ? [body.userCode]
+      : [];
+  const normalizedCodes: string[] = Array.from(
+    new Set(
+      rawCodes
+        .map((value: unknown) => String(value ?? "").trim().toUpperCase())
+        .filter(Boolean)
+    )
+  );
+
+  let user = createdUser;
+  for (const [index, code] of normalizedCodes.entries()) {
+    user = await assignCodeToUser({
+      ownerId: createdUser.id,
+      userId: createdUser.id,
+      code,
+      assignedById: session.user.id,
+      setPrimary: index === 0,
+    });
+  }
+
+  return NextResponse.json(serializeUserWithCodes(user), { status: 201 });
 }

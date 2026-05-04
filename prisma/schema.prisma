@@ -8,31 +8,72 @@ datasource db {
 }
 
 model User {
-  id                   String         @id @default(cuid())
-  name                 String?
-  email                String         @unique
-  role                 Role           @default(SHOPKEEPER)
-  userCode             String?        @unique
-  shopName             String?
-  shopStatus           ShopStatus     @default(ACTIVE)
-  shopExpiry           DateTime?
-  address              String?
-  phone                String?
-  passwordHash         String?
-  mustChangePassword   Boolean        @default(false)
-  createdAt            DateTime       @default(now())
-  updatedAt            DateTime       @updatedAt
-  accounts             Account[]
-  createdNotifications Notification[] @relation("NotificationCreatedBy")
-  notifications        Notification[] @relation("NotificationUser")
-  Order                Order[]
-  products             Product[]
-  sales                Sale[]
-  sessions             Session[]
+  id                     String         @id @default(cuid())
+  ownerId                String?
+  name                   String?
+  email                  String         @unique
+  role                   Role           @default(SHOPKEEPER)
+  primaryCodeId          String?
+  shopName               String?
+  shopStatus             ShopStatus     @default(ACTIVE)
+  shopExpiry             DateTime?
+  address                String?
+  phone                  String?
+  passwordHash           String?
+  mustChangePassword     Boolean        @default(false)
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+  owner                  User?          @relation("TenantMembership", fields: [ownerId], references: [id], onDelete: SetNull)
+  members                User[]         @relation("TenantMembership")
+  primaryCode            Code?          @relation("UserPrimaryCode", fields: [primaryCodeId], references: [id], onDelete: SetNull)
+  accounts               Account[]
+  createdNotifications   Notification[] @relation("NotificationCreatedBy")
+  notifications          Notification[] @relation("NotificationUser")
+  products               Product[]
+  createdSales           Sale[]         @relation("SaleCreatedBy")
+  ownedSales             Sale[]         @relation("SaleOwner")
+  sessions               Session[]
+  ownedCodes             Code[]         @relation("CodeOwner")
+  codeAssignments        UserCode[]     @relation("UserCodeUser")
+  codeAssignmentsOwned   UserCode[]     @relation("UserCodeOwner")
+  codeAssignmentsCreated UserCode[]     @relation("UserCodeAssignedBy")
 
+  @@index([ownerId, role, createdAt])
   @@index([role, createdAt])
   @@index([role, shopStatus])
   @@index([role, shopExpiry])
+}
+
+model Code {
+  id              String     @id @default(cuid())
+  ownerId         String
+  value           String
+  normalizedValue String
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  owner           User       @relation("CodeOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  users           UserCode[]
+  primaryForUsers User[]     @relation("UserPrimaryCode")
+
+  @@unique([ownerId, normalizedValue])
+  @@index([ownerId, value])
+}
+
+model UserCode {
+  id           String   @id @default(cuid())
+  ownerId      String
+  userId       String
+  codeId       String
+  assignedById String?
+  assignedAt   DateTime @default(now())
+  owner        User     @relation("UserCodeOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  user         User     @relation("UserCodeUser", fields: [userId], references: [id], onDelete: Cascade)
+  code         Code     @relation(fields: [codeId], references: [id], onDelete: Restrict)
+  assignedBy   User?    @relation("UserCodeAssignedBy", fields: [assignedById], references: [id], onDelete: SetNull)
+
+  @@unique([ownerId, userId, codeId])
+  @@index([ownerId, userId, assignedAt])
+  @@index([ownerId, codeId])
 }
 
 model AppSetting {
@@ -83,7 +124,7 @@ model VerificationToken {
 model Product {
   id           String        @id @default(cuid())
   name         String
-  sku          String        @unique
+  sku          String
   description  String?
   price        Decimal       @db.Decimal(10, 2)
   quantity     Int           @default(0)
@@ -96,20 +137,24 @@ model Product {
   owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   sales        Sale[]
 
+  @@unique([ownerId, sku])
   @@unique([ownerId, serialNumber])
   @@index([ownerId, quantity])
 }
 
 model Sale {
   id          String   @id @default(cuid())
+  ownerId     String
   productId   String
   quantity    Int
   total       Decimal  @default(0.00) @db.Decimal(10, 2)
   createdById String
   createdAt   DateTime @default(now())
-  createdBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  owner       User     @relation("SaleOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  createdBy   User     @relation("SaleCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
   product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
+  @@index([ownerId, createdAt])
   @@index([createdById, createdAt])
   @@index([productId, createdAt])
 }
@@ -129,21 +174,6 @@ model Notification {
   @@index([createdById, createdAt])
 }
 
-model Order {
-  id          String       @id
-  type        Order_type
-  status      Order_status @default(DRAFT)
-  partnerName String?
-  total       Decimal      @default(0.00) @db.Decimal(10, 2)
-  createdById String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime
-  User        User?        @relation(fields: [createdById], references: [id])
-
-  @@index([createdById, createdAt])
-  @@index([type, status, createdAt])
-}
-
 enum Role {
   ADMIN
   SHOPKEEPER
@@ -158,15 +188,4 @@ enum ProductStatus {
 enum ShopStatus {
   ACTIVE
   SUSPENDED
-}
-
-enum Order_type {
-  PURCHASE
-  SALE
-}
-
-enum Order_status {
-  DRAFT
-  COMPLETED
-  CANCELLED
 }

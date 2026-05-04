@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { requireActiveShopkeeper } from "@/lib/session-guards";
+import { getTenantOwnerId } from "@/lib/tenant";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -14,8 +15,9 @@ export async function GET(_: Request, { params }: Params) {
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const ownerId = getTenantOwnerId(session.user);
   const product = await prisma.product.findFirst({
-    where: { id, ownerId: session.user.id },
+    where: { id, ownerId },
     select: {
       id: true,
       name: true,
@@ -43,9 +45,10 @@ export async function PUT(req: Request, { params }: Params) {
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const ownerId = getTenantOwnerId(session.user);
   const body = await req.json();
   const existing = await prisma.product.findFirst({
-    where: { id, ownerId: session.user.id },
+    where: { id, ownerId },
     select: {
       id: true,
       name: true,
@@ -96,8 +99,9 @@ export async function DELETE(_: Request, { params }: Params) {
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const ownerId = getTenantOwnerId(session.user);
   const deleted = await prisma.product.deleteMany({
-    where: { id, ownerId: session.user.id },
+    where: { id, ownerId },
   });
   if (deleted.count === 0) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });

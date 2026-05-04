@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { guardActiveShopkeeper, requireActiveShopkeeper } from "@/lib/session-guards";
+import { getTenantOwnerId } from "@/lib/tenant";
 
 const saleSelect = {
   id: true,
@@ -37,7 +38,8 @@ export async function GET(req: Request) {
       ? Math.min(requestedTake, 200)
       : 100;
   const isShopkeeper = session.user.role === "SHOPKEEPER";
-  const baseWhere = isShopkeeper ? { createdById: session.user.id } : undefined;
+  const ownerId = isShopkeeper ? getTenantOwnerId(session.user) : null;
+  const baseWhere = isShopkeeper && ownerId ? { ownerId } : undefined;
 
   if (summary) {
     const sevenDaysAgo = new Date();
@@ -150,6 +152,7 @@ export async function POST(req: Request) {
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const ownerId = getTenantOwnerId(session.user);
 
   const body = await req.json();
   const productId = body.productId as string | undefined;
@@ -162,7 +165,7 @@ export async function POST(req: Request) {
   try {
     const result = await prisma.$transaction(async (tx) => {
       const product = await tx.product.findFirst({
-        where: { id: productId, ownerId: session.user.id },
+        where: { id: productId, ownerId },
         select: {
           id: true,
           price: true,
@@ -183,7 +186,7 @@ export async function POST(req: Request) {
       const nextStatus = nextQuantity === 0 ? "SOLD" : product.status;
 
       const updated = await tx.product.updateMany({
-        where: { id: productId, ownerId: session.user.id, quantity: { gte: quantity } },
+        where: { id: productId, ownerId, quantity: { gte: quantity } },
         data: {
           quantity: { decrement: quantity },
           status: nextStatus,
@@ -202,6 +205,7 @@ export async function POST(req: Request) {
 
       const sale = await tx.sale.create({
         data: {
+          ownerId,
           productId,
           quantity,
           total: lineTotal,

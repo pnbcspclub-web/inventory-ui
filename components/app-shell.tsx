@@ -21,6 +21,8 @@ import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useTheme } from "@/components/theme-provider";
+import MustChangePasswordWatcher from "./must-change-password-watcher";
+import OfflineWatcher from "./offline-watcher";
 
 const { Header, Content, Sider } = Layout;
 
@@ -40,18 +42,29 @@ export default function AppShell({ children, user, appName }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [mounted, setMounted] = useState(false);
   const isAdmin = user.role === "ADMIN";
-  const requiresPasswordChange = !isAdmin && Boolean(user.mustChangePassword);
+  const requiresPasswordChange = Boolean(user.mustChangePassword);
+  const settingsPath = isAdmin ? "/admin/settings" : "/settings";
   const { mode: themeMode, toggle } = useTheme();
   const mode = searchParams.get("mode");
   const filter = searchParams.get("filter");
   const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
 
   useEffect(() => {
-    if (requiresPasswordChange && pathname !== "/settings") {
-      router.replace("/settings");
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && requiresPasswordChange && pathname) {
+      const normalizedPath = pathname.replace(/\/$/, "") || "/";
+      const normalizedSettingsPath = settingsPath.replace(/\/$/, "") || "/";
+      
+      if (normalizedPath !== normalizedSettingsPath) {
+        router.push(settingsPath);
+      }
     }
-  }, [pathname, requiresPasswordChange, router]);
+  }, [mounted, pathname, requiresPasswordChange, router, settingsPath]);
 
   const activeKey = useMemo(() => {
     if (!isAdmin) return pathname;
@@ -63,45 +76,45 @@ export default function AppShell({ children, user, appName }: AppShellProps) {
 
   const items = useMemo(
     () =>
-      isAdmin
+      requiresPasswordChange
         ? [
             {
-              key: "/admin/dashboard",
-              icon: <AppstoreOutlined />,
-              label: <Link href="/admin/dashboard" onClick={() => setMobileMenuVisible(false)}>Dashboard</Link>,
-            },
-            {
-              key: "/admin/users",
-              icon: <TeamOutlined />,
-              label: <Link href="/admin/users" onClick={() => setMobileMenuVisible(false)}>All Users</Link>,
-            },
-            {
-              key: "/admin/users?mode=create",
-              icon: <PlusCircleOutlined />,
-              label: <Link href="/admin/users?mode=create" onClick={() => setMobileMenuVisible(false)}>Create New User</Link>,
-            },
-            {
-              key: "/admin/users?filter=expiring",
-              icon: <ClockCircleOutlined />,
-              label: <Link href="/admin/users?filter=expiring" onClick={() => setMobileMenuVisible(false)}>Expiring Users</Link>,
-            },
-            {
-              key: "/admin/notifications",
-              icon: <BellOutlined />,
-              label: <Link href="/admin/notifications" onClick={() => setMobileMenuVisible(false)}>Notifications</Link>,
-            },
-            {
-              key: "/admin/settings",
+              key: settingsPath,
               icon: <SettingOutlined />,
-              label: <Link href="/admin/settings" onClick={() => setMobileMenuVisible(false)}>App Settings</Link>,
+              label: <Link href={settingsPath} onClick={() => setMobileMenuVisible(false)}>{isAdmin ? "App Settings" : "Settings"}</Link>,
             },
           ]
-        : requiresPasswordChange
+        : isAdmin
           ? [
               {
-                key: "/settings",
+                key: "/admin/dashboard",
+                icon: <AppstoreOutlined />,
+                label: <Link href="/admin/dashboard" onClick={() => setMobileMenuVisible(false)}>Dashboard</Link>,
+              },
+              {
+                key: "/admin/users",
+                icon: <TeamOutlined />,
+                label: <Link href="/admin/users" onClick={() => setMobileMenuVisible(false)}>All Users</Link>,
+              },
+              {
+                key: "/admin/users?mode=create",
+                icon: <PlusCircleOutlined />,
+                label: <Link href="/admin/users?mode=create" onClick={() => setMobileMenuVisible(false)}>Create New User</Link>,
+              },
+              {
+                key: "/admin/users?filter=expiring",
+                icon: <ClockCircleOutlined />,
+                label: <Link href="/admin/users?filter=expiring" onClick={() => setMobileMenuVisible(false)}>Expiring Users</Link>,
+              },
+              {
+                key: "/admin/notifications",
+                icon: <BellOutlined />,
+                label: <Link href="/admin/notifications" onClick={() => setMobileMenuVisible(false)}>Notifications</Link>,
+              },
+              {
+                key: "/admin/settings",
                 icon: <SettingOutlined />,
-                label: <Link href="/settings" onClick={() => setMobileMenuVisible(false)}>Settings</Link>,
+                label: <Link href="/admin/settings" onClick={() => setMobileMenuVisible(false)}>App Settings</Link>,
               },
             ]
           : [
@@ -131,25 +144,26 @@ export default function AppShell({ children, user, appName }: AppShellProps) {
               label: <Link href="/settings" onClick={() => setMobileMenuVisible(false)}>Settings</Link>,
             },
           ],
-    [isAdmin, requiresPasswordChange]
+    [isAdmin, requiresPasswordChange, settingsPath]
   );
 
-  const initials = (user.name ?? user.email ?? "U")
+
+  const initials = useMemo(() => (user.name ?? user.email ?? "U")
     .split(" ")
     .map((p) => p[0])
     .slice(0, 2)
     .join("")
-    .toUpperCase();
+    .toUpperCase(), [user.name, user.email]);
 
-  const menuItems = [
+  const menuItems = useMemo(() => [
     {
       key: "signout",
       label: "Sign out",
       onClick: () => signOut({ callbackUrl: "/login" }),
     },
-  ];
+  ], []);
 
-  const SidebarContent = (
+  const SidebarContent = useMemo(() => (
     <div className="invent-shell__sidebar flex h-full flex-col overflow-y-auto overflow-x-hidden">
       <div className="flex items-center gap-3 overflow-hidden px-6 py-7">
         <div className="invent-shell__logo shrink-0" aria-hidden="true">
@@ -183,10 +197,14 @@ export default function AppShell({ children, user, appName }: AppShellProps) {
         </Button>
       </div>
     </div>
-  );
+  ), [appName, activeKey, items]);
+
+  if (!mounted) return null;
 
   return (
     <Layout className="h-screen overflow-hidden" hasSider>
+      <MustChangePasswordWatcher mustChangePassword={requiresPasswordChange} />
+      <OfflineWatcher />
       {/* Desktop Sider */}
       <Sider
         width={260}

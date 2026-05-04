@@ -39,10 +39,11 @@ export const authOptions: NextAuthOptions = {
         }
         return {
           id: user.id,
+          ownerId: user.ownerId,
           name: user.name ?? user.email,
           email: user.email,
           role: user.role,
-          userCode: user.userCode,
+          userCode: null,
           address: user.address,
           phone: user.phone,
           shopName: user.shopName,
@@ -59,6 +60,7 @@ export const authOptions: NextAuthOptions = {
         const nextRole = (user as { role?: Role }).role ?? Role.SHOPKEEPER;
         token.role = nextRole;
         token.uid = (user as { id?: string }).id;
+        token.ownerId = (user as { ownerId?: string | null }).ownerId ?? null;
         token.userCode = (user as { userCode?: string | null }).userCode ?? null;
         token.address = (user as { address?: string | null }).address ?? null;
         token.phone = (user as { phone?: string | null }).phone ?? null;
@@ -74,8 +76,9 @@ export const authOptions: NextAuthOptions = {
         const currentUser = await prisma.user.findUnique({
           where: { id: token.uid as string },
           select: {
+            ownerId: true,
             role: true,
-            userCode: true,
+            primaryCode: { select: { value: true } },
             address: true,
             phone: true,
             shopName: true,
@@ -86,8 +89,9 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (currentUser) {
+          token.ownerId = currentUser.ownerId;
           token.role = currentUser.role;
-          token.userCode = currentUser.userCode;
+          token.userCode = currentUser.primaryCode?.value ?? null;
           token.address = currentUser.address;
           token.phone = currentUser.phone;
           token.shopName = currentUser.shopName;
@@ -105,6 +109,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user && token.uid) {
         session.user.role = token.role as Role;
         session.user.id = token.uid as string;
+        session.user.ownerId = token.ownerId as string | null;
         session.user.userCode = token.userCode as string | null;
         session.user.address = token.address as string | null;
         session.user.phone = token.phone as string | null;

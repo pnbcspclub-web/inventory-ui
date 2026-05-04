@@ -58,10 +58,14 @@ export default async function AdminDashboardPage() {
       select: {
         id: true,
         name: true,
-        userCode: true,
         shopName: true,
         shopStatus: true,
         createdAt: true,
+        primaryCode: {
+          select: {
+            value: true,
+          },
+        },
       },
     }),
     prisma.sale.aggregate({
@@ -278,7 +282,7 @@ export default async function AdminDashboardPage() {
                               {shop.shopName || shop.name || "Unnamed shop"}
                             </div>
                             <div className="text-[9px] lg:text-[10px] font-bold uppercase tracking-tighter text-muted">
-                              {shop.userCode || "No code"}
+                              {shop.primaryCode?.value || "No code"}
                             </div>
                           </td>
                           <td className="border-b border-border px-4 py-3 lg:py-4 align-top">

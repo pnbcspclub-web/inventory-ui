@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { requireActiveShopkeeper } from "@/lib/session-guards";
+import { getTenantOwnerId } from "@/lib/tenant";
 
 export async function GET() {
   const { response, session } = requireActiveShopkeeper(await auth());
@@ -11,7 +12,7 @@ export async function GET() {
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const userId = session.user.id;
+  const ownerId = getTenantOwnerId(session.user);
 
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
@@ -23,30 +24,30 @@ export async function GET() {
     (prisma.sale?.aggregate({
       _sum: { total: true },
       where: {
-        createdById: userId,
+        ownerId,
         createdAt: { gte: todayStart },
       },
     }) ?? Promise.resolve({ _sum: { total: 0 } })),
     (prisma.sale?.aggregate({
       _sum: { total: true },
       where: {
-        createdById: userId,
+        ownerId,
         createdAt: { gte: monthStart },
       },
     }) ?? Promise.resolve({ _sum: { total: 0 } })),
     prisma.product.aggregate({
       _count: { _all: true },
       _sum: { quantity: true },
-      where: { ownerId: userId },
+      where: { ownerId },
     }),
     prisma.product.count({
       where: {
-        ownerId: userId,
+        ownerId,
         quantity: { gt: 0, lte: 5 },
       },
     }),
     prisma.product.findMany({
-      where: { ownerId: userId },
+      where: { ownerId },
       orderBy: { createdAt: "desc" },
       take: 5,
       select: {

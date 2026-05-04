@@ -53,7 +53,7 @@ export default function ShopSettingsClient({ user }: ShopSettingsClientProps) {
         <h1 className="text-2xl font-semibold text-[color:var(--foreground)]">
           Settings
         </h1>
-        <p className="text-sm text-[color:var(--muted)]">
+        <p className={`text-sm text-[color:var(--muted)] ${requiresPasswordChange&&"text-red-800 text-xl font-semibold"}`}>
           {requiresPasswordChange
             ? "You must set a new password before you can use the rest of the app."
             : "Review your shop profile details. Contact your admin to update these fields."}
